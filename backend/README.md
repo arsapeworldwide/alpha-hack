@@ -9,7 +9,7 @@ SQLite с переключением через DATABASE_URL, pytest, httpx, ruf
 
 ## Docker
 
-Нужны Docker с Linux-контейнерами и Compose v2. Из корня репозитория:
+Нужны Docker с Linux-контейнерами и Compose 2 или новее. Из корня репозитория:
 
 ```sh
 docker compose up --build
@@ -33,8 +33,10 @@ Volume сохраняет SQLite при пересоздании контейн�
 `docker compose up --no-build --pull never` работает с локальным образом без сети интернет.
 Swagger также использует локальные JS/CSS.
 
-Проверка контейнера пока не выполнена: на этой машине отсутствуют Docker Engine и WSL.
-Проверены Compose v2.35.1 config и доступность бинарных зависимостей для Linux
+Проверка контейнера пока не выполнена: после установки Docker Desktop 4.96.3
+и WSL 3.0.3 Windows потребовала перезагрузку для Virtual Machine Platform.
+После перезагрузки нужно запустить Docker Desktop и дождаться готовности Linux Engine.
+Проверены Compose config и доступность бинарных зависимостей для Linux
 amd64/arm64 с glibc >=2.28. Это не заменяет сборку и запуск контейнера.
 
 ## Проверка трёх сценариев и сохранения данных

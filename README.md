@@ -27,7 +27,7 @@
 
 ## Запуск в Docker
 
-Нужны Docker с Linux-контейнерами и Docker Compose v2. Из корня репозитория:
+Нужны Docker с Linux-контейнерами и Docker Compose 2 или новее. Из корня репозитория:
 
 ```sh
 docker compose up --build
@@ -39,7 +39,8 @@ Seed загружается автоматически, `.env` не обязат
 Перезапуск и обычный `docker compose down` сохраняют заявки.
 Сервис frontend добавит фронтенд-разработчик; сейчас запускается только backend.
 
-На машине разработки нет Docker Engine/WSL, поэтому сборка и запуск контейнера
-ещё не подтверждены. `docker compose config` проверен официальным CLI;
+На машине разработки установлены Docker Desktop 4.96.3 и WSL 3.0.3;
+Windows потребовала перезагрузку после включения Virtual Machine Platform.
+Сборка и запуск контейнера ещё не подтверждены. `docker compose config` проверен официальным CLI;
 все три сценария и сохранение данных проверены на локальном Uvicorn.
 Подробная проверка и ограничения: [backend/README.md](backend/README.md).
