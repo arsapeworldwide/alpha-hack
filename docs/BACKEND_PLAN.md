@@ -13,7 +13,8 @@
 - [x] Фаза 2: реализовать API, валидацию и единые ошибки.
 - [x] Добавить идемпотентность, журнал, pipeline и восстановление при старте.
 - [x] Добавить симуляторы, NEEDS_RECHECK, ленту и API-тесты.
-- [ ] Фаза 3: Docker, compose, persistent volume, healthcheck, non-root.
+- [x] Фаза 3: Docker, compose, persistent volume, healthcheck, non-root — конфигурация.
+- [ ] Фаза 3: собрать и запустить контейнер, проверить health и сохранение volume.
 - [ ] Проверить nginx и три сценария, если фронтенд доступен.
 - [ ] Фаза 4: банковская роль, токен, ручное решение и аудит.
 - [ ] Завершить документацию, коллекцию, pytest, ruff и проверку Docker.
@@ -98,3 +99,24 @@ ML — только после DoD и отдельного подтвержде�
 - Итог: 168 тестов pytest прошли, ruff check и format --check прошли;
   экспортированный OpenAPI полностью совпадает со схемой приложения.
   Все Python-файлы короче 250 строк. Предупреждение TestClient/anyio прежнее.
+
+## Фаза 3 — конфигурация готова, Docker-прогон ожидает окружение
+
+- backend/Dockerfile: python:3.12-slim, runtime-lock с хешами, UID/GID 10001,
+  один worker, HEALTHCHECK на реальный API. Добавлен backend/.dockerignore.
+- Compose: localhost:8000, env_file .env.example с переопределением через env/.env,
+  named volume backend_data, read-only rootfs, tmpfs, сброс capabilities.
+- Корневые пустые Dockerfile и requirements.txt сохранены; используются файлы backend/.
+- Фронтенд отсутствует. Добавлены только комментарий-заглушка в compose и инструкция
+  docs/FRONTEND_INTEGRATION.md; UI/nginx не проверялись.
+- Docker CLI 28.1.1 и Compose 2.35.1 загружены в .tools/ без системной установки.
+  Compose config прошёл, значения env/порта/volume/CORS проверены.
+- Runtime-зависимости доступны бинарными wheels для Linux amd64 и arm64 (glibc >=2.28).
+- scripts/smoke_api.py проверил три исхода по HTTP с паузой 1 секунда на этап;
+  после остановки и нового запуска Uvicorn все ID и числа сохранились.
+- Docker Engine и WSL отсутствуют: compose up --build не может подключиться
+  к docker_engine. Контейнер не собран и не запущен; DoD Docker остаётся незакрытым.
+- Для фактической проверки на этой Windows-машине нужна системная установка
+  Docker с Linux-контейнерами/виртуализацией либо другое доступное Docker-окружение.
+- Итог доступных проверок: 173 теста pytest прошли, ruff check/format --check прошли,
+  Compose config прошёл. Docker DoD и интерфейс остаются непроверенными.

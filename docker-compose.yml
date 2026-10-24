@@ -1,0 +1,50 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: alfa-credit-backend:local
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 15s
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+    env_file:
+      - ./.env.example
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////data/credit.db}
+      BANK_API_TOKEN: ${BANK_API_TOKEN:-demo-bank-token}
+      PIPELINE_STEP_SECONDS: ${PIPELINE_STEP_SECONDS:-1}
+      SIMULATE_BKI_FAILURE: ${SIMULATE_BKI_FAILURE:-false}
+      EGRUL_PROVIDER: ${EGRUL_PROVIDER:-simulator}
+      BKI_PROVIDER: ${BKI_PROVIDER:-simulator}
+      CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:5173","http://localhost:8080"]}'
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - backend_data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.healthcheck"]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
+  # Фронтенд-разработчик добавит свой сервис; папки frontend/ пока нет.
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "8080:80"
+  #   depends_on:
+  #     backend:
+  #       condition: service_healthy
+  # В nginx сохранить /api: proxy_pass http://backend:8000; (без завершающего /).
+
+volumes:
+  backend_data:
