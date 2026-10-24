@@ -1,0 +1,110 @@
+{
+  "spec": "SCORING_SPEC.md",
+  "synthetic": true,
+  "as_of": "2026-10-24",
+  "rounding": "half-up; итоговый score округляется после сложения факторов; платёж и переплата округляются независимо от неокруглённого P",
+  "profiles": [
+    {
+      "id": "approved_retail",
+      "inn": "7712345678",
+      "segment": "retail",
+      "input": {
+        "annual_revenue": 180000000, "monthly_payments": 400000,
+        "credit_history": "excellent", "business_age_years": 7,
+        "requested_amount": 10000000, "term_months": 36, "goal": "working_capital"
+      },
+      "expected": {
+        "score": 97, "status": "APPROVED", "rate": "19",
+        "amount": 10000000, "monthly_payment": 366560, "overpayment": 3196167,
+        "factor_points": ["35", "26.8", "20", "10", "5"]
+      }
+    },
+    {
+      "id": "counter_services",
+      "inn": "500100732259",
+      "segment": "services",
+      "input": {
+        "annual_revenue": 24000000, "monthly_payments": 400000,
+        "credit_history": "fair", "business_age_years": 3,
+        "requested_amount": 10000000, "term_months": 36, "goal": "working_capital"
+      },
+      "expected": {
+        "score": 46, "status": "COUNTER_OFFER", "rate": "24",
+        "amount": 2500000, "monthly_payment": 98082, "overpayment": 1030957,
+        "factor_points": ["20", "6", "12", "7", "1"]
+      }
+    },
+    {
+      "id": "rejected_production",
+      "inn": "7723456789",
+      "segment": "production",
+      "input": {
+        "annual_revenue": 9000000, "monthly_payments": 300000,
+        "credit_history": "poor", "business_age_years": 1,
+        "requested_amount": 10000000, "term_months": 36, "goal": "working_capital"
+      },
+      "expected": {
+        "score": 8, "status": "REJECTED", "rate": null, "amount": null,
+        "monthly_payment": null, "overpayment": null,
+        "rejection_reason": "Высокая долговая нагрузка", "reapply_date": "2027-01-24",
+        "factor_points": ["0", "0", "4", "4", "0"]
+      }
+    },
+    {
+      "id": "score_44",
+      "input": {
+        "annual_revenue": 24000000, "monthly_payments": 383333,
+        "credit_history": "fair", "business_age_years": 1,
+        "requested_amount": 10000000, "term_months": 36, "goal": "working_capital"
+      },
+      "expected": {"score": 44, "status": "REJECTED", "amount": null}
+    },
+    {
+      "id": "score_45",
+      "input": {
+        "annual_revenue": 24000000, "monthly_payments": 366667,
+        "credit_history": "fair", "business_age_years": 1,
+        "requested_amount": 10000000, "term_months": 36, "goal": "working_capital"
+      },
+      "expected": {"score": 45, "status": "COUNTER_OFFER", "rate": "24", "amount": 3300000}
+    },
+    {
+      "id": "capacity_zero",
+      "input": {
+        "annual_revenue": 24000000, "monthly_payments": 500000,
+        "credit_history": "excellent", "business_age_years": 5,
+        "requested_amount": 1000000, "term_months": 36, "goal": "working_capital"
+      },
+      "expected": {
+        "score": 62, "status": "REJECTED", "amount": null,
+        "rejection_reason": "Высокая долговая нагрузка", "capacity": "0"
+      }
+    },
+    {
+      "id": "cash_gap_12",
+      "input": {
+        "annual_revenue": 180000000, "monthly_payments": 400000,
+        "credit_history": "excellent", "business_age_years": 7,
+        "requested_amount": 1000000, "term_months": 12, "goal": "cash_gap"
+      },
+      "expected": {
+        "score": 97, "status": "APPROVED", "rate": "21", "amount": 1000000,
+        "monthly_payment": 93114, "overpayment": 117365
+      }
+    }
+  ],
+  "decision_boundaries": [
+    {"id": "maximum_299999", "score": 45, "capacity": "20000", "maximum": "299999", "requested_amount": 500000, "status": "REJECTED", "amount": null},
+    {"id": "maximum_300000", "score": 45, "capacity": "20000", "maximum": "300000", "requested_amount": 500000, "status": "COUNTER_OFFER", "amount": 300000},
+    {"id": "maximum_just_below_300000", "score": 45, "capacity": "20000", "maximum": "299999.99", "requested_amount": 500000, "status": "REJECTED", "amount": null},
+    {"id": "maximum_equals_request", "score": 45, "capacity": "20000", "maximum": "300000", "requested_amount": 300000, "status": "APPROVED", "amount": 300000},
+    {"id": "score_precedes_capacity", "score": 44, "capacity": "0", "maximum": "1000000", "requested_amount": 500000, "status": "REJECTED", "amount": null}
+  ],
+  "invalid_requests": [
+    {"id": "cash_gap_13", "overrides": {"goal": "cash_gap", "term_months": 13}},
+    {"id": "amount_below_minimum", "overrides": {"requested_amount": 299999}},
+    {"id": "amount_above_maximum", "overrides": {"requested_amount": 15000001}},
+    {"id": "term_below_minimum", "overrides": {"term_months": 2}},
+    {"id": "term_above_maximum", "overrides": {"term_months": 37}}
+  ]
+}
