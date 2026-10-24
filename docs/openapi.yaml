@@ -1,0 +1,102 @@
+# ЧЕРНОВИК бэкенда, сверить с контрактом фронтенда
+# Только перечень маршрутов; схемы и ошибки ещё не согласованы.
+openapi: 3.1.0
+info:
+  title: Умный кредитный кабинет — черновик
+  version: 0.0.0-draft
+paths:
+  /api/health:
+    get:
+      summary: Проверка доступности
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
+  /api/demo-profiles:
+    get:
+      summary: Демо-профили
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
+  /api/companies/lookup:
+    get:
+      summary: Поиск по ИНН
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
+  /api/applications:
+    post:
+      summary: Создать заявку
+      responses:
+        '201':
+          description: Предварительный успешный ответ; схема будет согласована
+    get:
+      summary: История заявок
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
+  /api/applications/{id}:
+    get:
+      summary: Получить заявку
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
+  /api/applications/{id}/accept-offer:
+    post:
+      summary: Принять предложение
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
+  /api/applications/{id}/sign:
+    post:
+      summary: Подписать заявку
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
+  /api/feed:
+    get:
+      summary: Материалы ленты
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
+  /api/demo/reset:
+    post:
+      summary: Сброс демо
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
+  /api/bank/applications:
+    get:
+      summary: Банковская очередь
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
+  /api/bank/applications/{id}/decision:
+    post:
+      summary: Ручное решение
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Предварительный успешный ответ; схема будет согласована
