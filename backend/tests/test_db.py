@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 import pytest
 from conftest import load_scoring_cases
 from sqlalchemy import delete, func, select
@@ -111,7 +109,7 @@ def test_delete_applications_cascades_and_preserves_seed(database):
                 application_id=application.id,
                 code="history",
                 name="История",
-                points=Decimal(35),
+                points="35",
                 maximum=35,
                 explanation="Синтетическая история",
             )

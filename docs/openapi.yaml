@@ -1,102 +1,1115 @@
 # ЧЕРНОВИК бэкенда, сверить с контрактом фронтенда
-# Только перечень маршрутов; схемы и ошибки ещё не согласованы.
 openapi: 3.1.0
 info:
-  title: Умный кредитный кабинет — черновик
-  version: 0.0.0-draft
+  title: Умный кредитный кабинет предпринимателя
+  description: ЧЕРНОВИК бэкенда, сверить с контрактом фронтенда. Все данные синтетические.
+  version: 0.1.0
 paths:
-  /api/health:
-    get:
-      summary: Проверка доступности
-      responses:
-        '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/demo-profiles:
-    get:
-      summary: Демо-профили
-      responses:
-        '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/companies/lookup:
-    get:
-      summary: Поиск по ИНН
-      responses:
-        '200':
-          description: Предварительный успешный ответ; схема будет согласована
   /api/applications:
     post:
-      summary: Создать заявку
+      tags:
+      - applications
+      summary: Submit Application
+      operationId: submit_application_api_applications_post
+      parameters:
+      - name: idempotency-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 200
+            pattern: ^[!-~]+$
+          - type: 'null'
+          title: Idempotency-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApplication'
       responses:
         '201':
-          description: Предварительный успешный ответ; схема будет согласована
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Too Many Requests
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Service Unavailable
+        '200':
+          description: Повтор запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationResponse'
     get:
-      summary: История заявок
+      tags:
+      - applications
+      summary: Application History
+      operationId: application_history_api_applications_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApplicationResponse'
+                title: Response Application History Api Applications Get
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Too Many Requests
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Service Unavailable
   /api/applications/{id}:
     get:
-      summary: Получить заявку
+      tags:
+      - applications
+      summary: Application Detail
+      operationId: application_detail_api_applications__id__get
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Id
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Too Many Requests
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Service Unavailable
   /api/applications/{id}/accept-offer:
     post:
-      summary: Принять предложение
+      tags:
+      - applications
+      summary: Accept Application Offer
+      operationId: accept_application_offer_api_applications__id__accept_offer_post
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Id
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Too Many Requests
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Service Unavailable
   /api/applications/{id}/sign:
     post:
-      summary: Подписать заявку
+      tags:
+      - applications
+      summary: Sign
+      operationId: sign_api_applications__id__sign_post
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignRequest'
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/feed:
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Too Many Requests
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Service Unavailable
+  /api/companies/lookup:
     get:
-      summary: Материалы ленты
+      tags:
+      - companies
+      summary: Lookup Company
+      operationId: lookup_company_api_companies_lookup_get
+      parameters:
+      - name: inn
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^(?:[0-9]{10}|[0-9]{12})$
+          title: Inn
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyLookupResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Too Many Requests
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Service Unavailable
+  /api/demo-profiles:
+    get:
+      tags:
+      - demo
+      summary: Demo Profiles
+      operationId: demo_profiles_api_demo_profiles_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/CompanyResponse'
+                type: array
+                title: Response Demo Profiles Api Demo Profiles Get
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/demo/reset:
     post:
-      summary: Сброс демо
+      tags:
+      - demo
+      summary: Reset Demo
+      operationId: reset_demo_api_demo_reset_post
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/bank/applications:
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/feed:
     get:
-      summary: Банковская очередь
-      responses:
-        '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/bank/applications/{id}/decision:
-    post:
-      summary: Ручное решение
+      tags:
+      - feed
+      summary: Feed
+      operationId: feed_api_feed_get
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
+      - name: segment
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/Segment'
+          default: general
+      - name: context
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - const: rejected
             type: string
+          - type: 'null'
+          title: Context
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedArticleResponse'
+                title: Response Feed Api Feed Get
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Too Many Requests
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Service Unavailable
+  /api/health:
+    get:
+      tags:
+      - health
+      summary: Health
+      operationId: health_api_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    Actor:
+      type: string
+      enum:
+      - system
+      - client
+      - bank
+      title: Actor
+    ApplicationResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        status:
+          $ref: '#/components/schemas/Status'
+        status_label:
+          type: string
+          title: Status Label
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        company:
+          $ref: '#/components/schemas/CompanyResponse'
+        parameters:
+          $ref: '#/components/schemas/LoanParameters'
+        stages:
+          items:
+            $ref: '#/components/schemas/PipelineStage'
+          type: array
+          title: Stages
+        decision:
+          anyOf:
+          - $ref: '#/components/schemas/DecisionResponse'
+          - type: 'null'
+        score:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Score
+        factors:
+          items:
+            $ref: '#/components/schemas/FactorResponse'
+          type: array
+          title: Factors
+        rejection_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rejection Reason
+        recommendations:
+          items:
+            type: string
+          type: array
+          title: Recommendations
+        reapply_date:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Reapply Date
+        sign_attempts_remaining:
+          type: integer
+          title: Sign Attempts Remaining
+        events:
+          items:
+            $ref: '#/components/schemas/EventResponse'
+          type: array
+          title: Events
+      type: object
+      required:
+      - id
+      - status
+      - status_label
+      - message
+      - created_at
+      - updated_at
+      - company
+      - parameters
+      - stages
+      - decision
+      - score
+      - factors
+      - rejection_reason
+      - recommendations
+      - reapply_date
+      - sign_attempts_remaining
+      - events
+      title: ApplicationResponse
+    CompanyLookupResponse:
+      properties:
+        found:
+          type: boolean
+          title: Found
+        company:
+          anyOf:
+          - $ref: '#/components/schemas/CompanyResponse'
+          - type: 'null'
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - found
+      - company
+      - message
+      title: CompanyLookupResponse
+    CompanyResponse:
+      properties:
+        inn:
+          type: string
+          pattern: ^(?:[0-9]{10}|[0-9]{12})$
+          title: Inn
+        name:
+          type: string
+          title: Name
+        annual_revenue:
+          type: integer
+          title: Annual Revenue
+        monthly_payments:
+          type: integer
+          title: Monthly Payments
+        credit_history:
+          $ref: '#/components/schemas/CreditHistory'
+        business_age_years:
+          type: integer
+          title: Business Age Years
+        segment:
+          $ref: '#/components/schemas/Segment'
+        synthetic:
+          type: boolean
+          title: Synthetic
+          default: true
+      type: object
+      required:
+      - inn
+      - name
+      - annual_revenue
+      - monthly_payments
+      - credit_history
+      - business_age_years
+      - segment
+      title: CompanyResponse
+    CreateApplication:
+      properties:
+        requested_amount:
+          type: integer
+          maximum: 15000000.0
+          minimum: 300000.0
+          title: Requested Amount
+        term_months:
+          type: integer
+          maximum: 36.0
+          minimum: 3.0
+          title: Term Months
+        goal:
+          $ref: '#/components/schemas/Goal'
+        inn:
+          type: string
+          pattern: ^(?:[0-9]{10}|[0-9]{12})$
+          title: Inn
+      additionalProperties: false
+      type: object
+      required:
+      - requested_amount
+      - term_months
+      - goal
+      - inn
+      title: CreateApplication
+    CreditHistory:
+      type: string
+      enum:
+      - excellent
+      - fair
+      - poor
+      title: CreditHistory
+    DecisionResponse:
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        annual_rate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Annual Rate
+        amount:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Amount
+        monthly_payment:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Monthly Payment
+        overpayment:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Overpayment
+        manual:
+          type: boolean
+          title: Manual
+      type: object
+      required:
+      - status
+      - annual_rate
+      - amount
+      - monthly_payment
+      - overpayment
+      - manual
+      title: DecisionResponse
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+          title: Code
+        message:
+          type: string
+          title: Message
+        details:
+          type: object
+          title: Details
+      type: object
+      required:
+      - code
+      - message
+      title: ErrorResponse
+    EventResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+        occurred_at:
+          type: string
+          format: date-time
+          title: Occurred At
+        from_status:
+          anyOf:
+          - $ref: '#/components/schemas/Status'
+          - type: 'null'
+        to_status:
+          $ref: '#/components/schemas/Status'
+        actor:
+          $ref: '#/components/schemas/Actor'
+        details:
+          type: object
+          title: Details
+      type: object
+      required:
+      - id
+      - occurred_at
+      - from_status
+      - to_status
+      - actor
+      - details
+      title: EventResponse
+    FactorResponse:
+      properties:
+        code:
+          type: string
+          title: Code
+        name:
+          type: string
+          title: Name
+        points:
+          type: string
+          title: Points
+        maximum:
+          type: integer
+          title: Maximum
+        explanation:
+          type: string
+          title: Explanation
+      type: object
+      required:
+      - code
+      - name
+      - points
+      - maximum
+      - explanation
+      title: FactorResponse
+    FeedArticleResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        segment:
+          $ref: '#/components/schemas/Segment'
+        title:
+          type: string
+          title: Title
+        summary:
+          type: string
+          title: Summary
+        full_text:
+          type: string
+          title: Full Text
+        tag:
+          type: string
+          title: Tag
+        reading_minutes:
+          type: integer
+          title: Reading Minutes
+        synthetic:
+          type: boolean
+          title: Synthetic
+      type: object
+      required:
+      - id
+      - segment
+      - title
+      - summary
+      - full_text
+      - tag
+      - reading_minutes
+      - synthetic
+      title: FeedArticleResponse
+    Goal:
+      type: string
+      enum:
+      - working_capital
+      - equipment
+      - cash_gap
+      title: Goal
+    HealthResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+        database:
+          type: string
+          title: Database
+        synthetic:
+          type: boolean
+          title: Synthetic
+      type: object
+      required:
+      - status
+      - database
+      - synthetic
+      title: HealthResponse
+    LoanParameters:
+      properties:
+        requested_amount:
+          type: integer
+          maximum: 15000000.0
+          minimum: 300000.0
+          title: Requested Amount
+        term_months:
+          type: integer
+          maximum: 36.0
+          minimum: 3.0
+          title: Term Months
+        goal:
+          $ref: '#/components/schemas/Goal'
+      additionalProperties: false
+      type: object
+      required:
+      - requested_amount
+      - term_months
+      - goal
+      title: LoanParameters
+    PipelineStage:
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        name:
+          type: string
+          title: Name
+        state:
+          type: string
+          enum:
+          - pending
+          - active
+          - completed
+          - failed
+          title: State
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Started At
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Finished At
+      type: object
+      required:
+      - code
+      - name
+      - state
+      title: PipelineStage
+    ResetResponse:
+      properties:
+        deleted_applications:
+          type: integer
+          title: Deleted Applications
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - deleted_applications
+      - message
+      title: ResetResponse
+    Segment:
+      type: string
+      enum:
+      - retail
+      - services
+      - production
+      - general
+      title: Segment
+    SignRequest:
+      properties:
+        code:
+          type: string
+          pattern: ^[0-9]{4}$
+          title: Code
+      additionalProperties: false
+      type: object
+      required:
+      - code
+      title: SignRequest
+    Status:
+      type: string
+      enum:
+      - DRAFT
+      - SUBMITTED
+      - CHECKING_EGRUL
+      - CHECKING_BKI
+      - SCORING
+      - APPROVED
+      - COUNTER_OFFER
+      - REJECTED
+      - NEEDS_RECHECK
+      - OFFER_ACCEPTED
+      - SIGNED
+      - DISBURSED
+      title: Status

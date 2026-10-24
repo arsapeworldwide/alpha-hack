@@ -132,7 +132,8 @@ class ScoringFactor(Base):
     )
     code: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(100))
-    points: Mapped[Decimal] = mapped_column(Numeric(24, 16))
+    # SQLite Numeric проходит через float; строка сохраняет точные баллы Decimal.
+    points: Mapped[str] = mapped_column(String(64))
     maximum: Mapped[int]
     explanation: Mapped[str] = mapped_column(Text)
 
