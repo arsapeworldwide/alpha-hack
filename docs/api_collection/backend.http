@@ -1,0 +1,152 @@
+@baseUrl = http://localhost:8000/api
+@bankToken = demo-bank-token
+
+### Проверка сервиса
+GET {{baseUrl}}/health
+
+### Демо-профили
+GET {{baseUrl}}/demo-profiles
+
+### Поиск известной компании
+GET {{baseUrl}}/companies/lookup?inn=7712345678
+
+### Неизвестный ИНН: 200, found=false
+GET {{baseUrl}}/companies/lookup?inn=0000000000
+
+### Невалидный ИНН: 422
+GET {{baseUrl}}/companies/lookup?inn=123
+
+### Создать одобряемую заявку: 201/SUBMITTED.
+# Повтор этого же запроса: 200, прежний ID. Для нового прогона выполните reset в конце файла.
+# @name approved
+POST {{baseUrl}}/applications
+Content-Type: application/json
+Idempotency-Key: collection-approved-1
+
+{"inn":"7712345678","requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+
+### Опрос: дождаться APPROVED, 97 баллов, 19%, 10 000 000
+GET {{baseUrl}}/applications/{{approved.response.body.$.id}}
+
+### Неверный код: 400, расходует попытку
+POST {{baseUrl}}/applications/{{approved.response.body.$.id}}/sign
+Content-Type: application/json
+
+{"code":"0000"}
+
+### Подписать одобренную заявку: 200/SIGNED
+POST {{baseUrl}}/applications/{{approved.response.body.$.id}}/sign
+Content-Type: application/json
+
+{"code":"1234"}
+
+### Опрос: через ~1 сек DISBURSED
+GET {{baseUrl}}/applications/{{approved.response.body.$.id}}
+
+### Создать встречное предложение
+# @name counter
+POST {{baseUrl}}/applications
+Content-Type: application/json
+Idempotency-Key: collection-counter-1
+
+{"inn":"500100732259","requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+
+### Опрос: дождаться COUNTER_OFFER, 46 баллов, 24%, 2 500 000
+GET {{baseUrl}}/applications/{{counter.response.body.$.id}}
+
+### Прямая подпись встречного предложения: 409
+POST {{baseUrl}}/applications/{{counter.response.body.$.id}}/sign
+Content-Type: application/json
+
+{"code":"1234"}
+
+### Принять предложение: OFFER_ACCEPTED
+POST {{baseUrl}}/applications/{{counter.response.body.$.id}}/accept-offer
+
+### Подписать принятое предложение: SIGNED
+POST {{baseUrl}}/applications/{{counter.response.body.$.id}}/sign
+Content-Type: application/json
+
+{"code":"1234"}
+
+### Опрос: DISBURSED
+GET {{baseUrl}}/applications/{{counter.response.body.$.id}}
+
+### Создать отказ
+# @name rejected
+POST {{baseUrl}}/applications
+Content-Type: application/json
+Idempotency-Key: collection-rejected-1
+
+{"inn":"7723456789","requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+
+### Опрос: REJECTED, 8 баллов, рекомендации и дата повторной подачи
+GET {{baseUrl}}/applications/{{rejected.response.body.$.id}}
+
+### История
+GET {{baseUrl}}/applications?limit=50&offset=0
+
+### Сегментная лента
+GET {{baseUrl}}/feed?segment=retail
+
+### Лента после отказа
+GET {{baseUrl}}/feed?segment=production&context=rejected
+
+### Создать отдельную заявку для ручного одобрения
+# @name bankReview
+POST {{baseUrl}}/applications
+Content-Type: application/json
+Idempotency-Key: collection-bank-1
+
+{"inn":"500100732259","requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+
+### Дождаться COUNTER_OFFER
+GET {{baseUrl}}/applications/{{bankReview.response.body.$.id}}
+
+### Очередь банка: полный ответ с факторами
+GET {{baseUrl}}/bank/applications?limit=50&offset=0
+X-Bank-Token: {{bankToken}}
+
+### Ручное одобрение исходных 10 000 000 по ставке 24%
+POST {{baseUrl}}/bank/applications/{{bankReview.response.body.$.id}}/decision
+Content-Type: application/json
+X-Bank-Token: {{bankToken}}
+
+{"action":"approve","comment":"Дополнительные данные проверены в синтетическом демо"}
+
+### Подписать вручную одобренную заявку без accept-offer
+POST {{baseUrl}}/applications/{{bankReview.response.body.$.id}}/sign
+Content-Type: application/json
+
+{"code":"1234"}
+
+### Создать отдельную заявку для ручного отказа
+# @name bankReject
+POST {{baseUrl}}/applications
+Content-Type: application/json
+Idempotency-Key: collection-bank-reject-1
+
+{"inn":"7712345678","requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+
+### Дождаться APPROVED
+GET {{baseUrl}}/applications/{{bankReject.response.body.$.id}}
+
+### Ручной отказ: прежнее одобрение останется в журнале
+POST {{baseUrl}}/bank/applications/{{bankReject.response.body.$.id}}/decision
+Content-Type: application/json
+X-Bank-Token: {{bankToken}}
+
+{"action":"reject","comment":"Дополнительные обстоятельства синтетического примера"}
+
+### Для score 8 банк не придумывает ставку: 409/BANK_RATE_UNAVAILABLE
+POST {{baseUrl}}/bank/applications/{{rejected.response.body.$.id}}/decision
+Content-Type: application/json
+X-Bank-Token: {{bankToken}}
+
+{"action":"approve","comment":"Проверка ограничения SPEC"}
+
+### Без банковского токена: 401
+GET {{baseUrl}}/bank/applications
+
+### Сброс: УДАЛЯЕТ ВСЕ ДЕМО-ЗАЯВКИ, компании и лента сохраняются
+POST {{baseUrl}}/demo/reset

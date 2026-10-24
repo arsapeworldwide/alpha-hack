@@ -2,7 +2,7 @@
 
 Реализованы БД, синтетические данные, бизнес-логика, API и конвейер.
 При старте создаются таблицы и добавляется seed; Swagger доступен на `/api/docs`.
-Docker-конфигурация подготовлена; банковская роль — Фаза 4.
+Docker и банковская роль реализованы; контракт пока остаётся черновиком бэкенда.
 
 Стек: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.x,
 SQLite с переключением через DATABASE_URL, pytest, httpx, ruff.
@@ -115,7 +115,7 @@ macOS / Linux:
 |---|---|---|
 | DATABASE_URL | sqlite:///./data/credit.db | Локальный файл БД |
 | BACKEND_PORT | 8000 | Публикуемый порт compose; внутри контейнера всегда 8000 |
-| BANK_API_TOKEN | demo-bank-token | Демо-токен банковской роли (Фаза 4) |
+| BANK_API_TOKEN | demo-bank-token | Токен банковской роли |
 | PIPELINE_STEP_SECONDS | 1 | Пауза этапа, 0 в тестах |
 | SIMULATE_BKI_FAILURE | false | Сбой БКИ и статус NEEDS_RECHECK |
 | EGRUL_PROVIDER | simulator | Адаптер ЕГРЮЛ |
@@ -171,11 +171,41 @@ POST /api/demo/reset очищает заявки и сохраняет проф�
 
 Для экспорта схемы из backend/: `python -m scripts.export_openapi`.
 PyYAML нужен только для экспорта и контрактного теста, в runtime-lock его нет.
-Банковские маршруты пока не включены в экспорт: они запланированы в Фазе 4.
+Все 12 операций, включая банковские, включены в экспорт.
 Провайдеры выбираются настройками EGRUL_PROVIDER и BKI_PROVIDER;
 для нового адаптера реализуйте соответствующий ABC и зарегистрируйте его
 в integrations/providers.py и допустимых значениях Settings.
 После этого переключение выполняется одной строкой env.
+
+## Банковская роль и документация
+
+В Swagger нажмите Authorize и введите demo-bank-token (или BANK_API_TOKEN из env).
+GET /api/bank/applications возвращает очередь с факторами; POST
+/api/bank/applications/{id}/decision принимает action=approve|reject и непустой comment.
+Без токена — 401. Комментарий виден в клиентском журнале, в логи не пишется.
+Решение сотрудника помечено manual=true и атомарно сохраняется с событием actor=bank.
+approve при score от 45 одобряет исходную запрошенную сумму по ставке SPEC;
+score и факторы не пересчитываются. Для score <45 ставка не определена — 409.
+NEEDS_RECHECK без скоринга нельзя одобрить. После принятия предложения клиентом,
+подписания и выдачи решение менять нельзя. Приём решений доступен до этих этапов.
+
+Пошаговая проверка и ожидаемые числа — [TEST_SCENARIOS](../docs/TEST_SCENARIOS.md).
+Все маршруты с примерами — [коллекция REST Client](../docs/api_collection/backend.http).
+Откройте .http в VS Code с REST Client; запускайте блоки по порядку,
+между созданием и подписанием дождитесь конечного решения опросом GET.
+Для нового прогона коллекции сначала выполните reset в её конце.
+
+Диаграммы: [архитектура](../docs/ARCHITECTURE.md),
+[состояния](../docs/APPLICATION_STATES.md), [модель данных](../docs/DATA_MODEL.md).
+Полные лицензии Python-зависимостей находятся в third_party_licenses/;
+список и происхождение — [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md).
+После обновления lock и установки dev-зависимостей из backend/:
+`python -m scripts.export_notices`.
+
+Для автоматического банковского прогона из backend/:
+`python -m scripts.smoke_bank --report data/bank-report.json`.
+После перезапуска контейнера: `python -m scripts.smoke_bank --verify-report data/bank-report.json`.
+При своём токене задайте BANK_API_TOKEN в окружении скрипта; значение токена не печатается.
 
 См. [план](../docs/BACKEND_PLAN.md), [правила](../docs/SCORING_SPEC.md)
 и [общие эталонные кейсы](../docs/scoring_cases.json).

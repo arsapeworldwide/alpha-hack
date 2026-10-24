@@ -12,7 +12,11 @@ def test_exported_contract_matches_fastapi(client):
         for method in operations:
             assert method in generated["paths"][route]
     assert generated == contract
-    assert sum(len(methods) for methods in generated["paths"].values()) == 10
+    assert sum(len(methods) for methods in generated["paths"].values()) == 12
+    for path in ("/api/bank/applications", "/api/bank/applications/{id}/decision"):
+        for operation in generated["paths"][path].values():
+            assert operation["security"] == [{"BankToken": []}]
+            assert "401" in operation["responses"]
     response_schema = generated["paths"]["/api/applications"]["post"]["responses"]["422"]
     assert response_schema["content"]["application/json"]["schema"]["$ref"].endswith(
         "ErrorResponse"

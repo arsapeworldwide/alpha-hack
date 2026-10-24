@@ -59,12 +59,14 @@ TRANSITIONS: dict[Actor, dict[Status, frozenset[Status]]] = {
         Status.SIGNED: frozenset({Status.DISBURSED}),
     },
     Actor.BANK: {
-        Status.APPROVED: frozenset({Status.REJECTED}),
+        Status.APPROVED: frozenset({Status.APPROVED, Status.REJECTED}),
         Status.COUNTER_OFFER: frozenset({Status.APPROVED, Status.REJECTED}),
-        Status.REJECTED: frozenset({Status.APPROVED}),
+        Status.REJECTED: frozenset({Status.APPROVED, Status.REJECTED}),
         Status.NEEDS_RECHECK: frozenset({Status.APPROVED, Status.REJECTED}),
     },
 }
+
+BANK_REVIEW_STATUSES = frozenset(TRANSITIONS[Actor.BANK])
 
 
 class InvalidTransition(ValueError):

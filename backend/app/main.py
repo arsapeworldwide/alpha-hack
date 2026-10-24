@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.staticfiles import StaticFiles
 
-from app.api import applications, companies, demo, feed, health
+from app.api import applications, bank, companies, demo, feed, health
 from app.core.config import Settings, get_settings
 from app.core.errors import ERROR_RESPONSES, install_error_handlers
 from app.core.logging import RequestIdMiddleware, configure_logging
@@ -52,7 +52,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     install_error_handlers(app)
     api = APIRouter(prefix="/api", responses=ERROR_RESPONSES)
-    for router in (applications.router, companies.router, demo.router, feed.router, health.router):
+    for router in (
+        applications.router,
+        companies.router,
+        demo.router,
+        feed.router,
+        health.router,
+        bank.router,
+    ):
         api.include_router(router)
     app.include_router(api)
     app.mount("/api/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")

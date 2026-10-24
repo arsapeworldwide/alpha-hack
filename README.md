@@ -5,7 +5,7 @@
 
 Реализованы БД, seed, бизнес-логика, API и асинхронный конвейер.
 Docker-сборка, запуск, healthcheck и сохранение данных после перезапуска проверены.
-Банковская роль — Фаза 4. Фронтенд пока отсутствует.
+Банковская роль реализована. Фронтенд пока отсутствует.
 Стек бэкенда: Python 3.12, FastAPI, SQLAlchemy, SQLite.
 
 - [Бриф](docs/BACKEND_BRIEF.md)
@@ -16,6 +16,9 @@ Docker-сборка, запуск, healthcheck и сохранение данн�
 - [Уточнения API](docs/CONTRACT_CHANGES.md)
 - [Ограничения и развитие](docs/REVIEW_NOTES.md)
 - [Интеграция фронтенда и nginx](docs/FRONTEND_INTEGRATION.md)
+- [Сценарии для жюри](docs/TEST_SCENARIOS.md)
+- [Коллекция запросов](docs/api_collection/backend.http)
+- [Архитектура](docs/ARCHITECTURE.md), [состояния](docs/APPLICATION_STATES.md), [данные](docs/DATA_MODEL.md)
 - [Бэкенд](backend/README.md)
 - [Сторонние компоненты](THIRD_PARTY_NOTICES.md)
 
@@ -44,3 +47,7 @@ Seed загружается автоматически, `.env` не обязат
 перезапуска, сбой БКИ восстанавливается после пересоздания контейнера, reset работает.
 Скоринг также проверен в отдельном контейнере с `--network none`.
 Подробная проверка и ограничения: [backend/README.md](backend/README.md).
+
+Банковская роль: в Swagger Authorize введите demo-bank-token, затем откройте
+GET /api/bank/applications. Для решения сотрудника используйте action/comment
+в POST /api/bank/applications/{id}/decision. Настройка — BANK_API_TOKEN через env.

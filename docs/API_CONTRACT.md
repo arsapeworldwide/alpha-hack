@@ -17,6 +17,8 @@
 | POST /applications/{id}/sign | code — строка из 4 цифр | 200: SIGNED |
 | GET /feed | segment=general, context=rejected (необязательный) | 200: массив материалов |
 | POST /demo/reset | без тела | 200: deleted_applications, message |
+| GET /bank/applications | X-Bank-Token, limit=50, offset=0 | 200: очередь с полными заявками |
+| POST /bank/applications/{id}/decision | X-Bank-Token, action, comment | 200: полная заявка |
 
 Сумма: целое число 300 000–15 000 000, срок: целое число 3–36,
 для cash_gap не больше 12. goal: working_capital, equipment, cash_gap.
@@ -54,16 +56,33 @@ NEEDS_RECHECK восстанавливается после выключения
 | HTTP | code |
 |---|---|
 | 400 | INVALID_SIGN_CODE |
+| 401 | BANK_UNAUTHORIZED |
 | 404 | APPLICATION_NOT_FOUND, COMPANY_NOT_FOUND, NOT_FOUND |
 | 405 | METHOD_NOT_ALLOWED |
-| 409 | INVALID_TRANSITION, IDEMPOTENCY_CONFLICT, UPDATE_CONFLICT |
+| 409 | INVALID_TRANSITION, IDEMPOTENCY_CONFLICT, UPDATE_CONFLICT, BANK_RATE_UNAVAILABLE, BANK_SCORING_REQUIRED |
 | 422 | VALIDATION_ERROR |
 | 429 | SIGN_ATTEMPTS_EXCEEDED |
 | 500 | INTERNAL_ERROR |
 | 503 | DATABASE_UNAVAILABLE |
 
-Банковские маршруты планируются в Фазе 4: GET /api/bank/applications,
-POST /api/bank/applications/{id}/decision с {action: approve|reject, comment}.
-Они будут защищены X-Bank-Token; сейчас не реализованы.
+Банковские маршруты реализованы, X-Bank-Token соответствует BANK_API_TOKEN из env
+(демо: demo-bank-token). OpenAPI содержит схему безопасности BankToken для Swagger Authorize.
+Очередь включает APPROVED, COUNTER_OFFER, REJECTED и NEEDS_RECHECK,
+порядок — по updated_at от старых к новым, затем ID; limit=1–100, offset от 0.
+Ручные результаты остаются в очереди для пересмотра до принятия предложения клиентом.
+
+Тело решения: {action: approve|reject, comment}, комментарий обязателен,
+1–1000 символов после удаления пробелов по краям. Неизвестные поля запрещены.
+approve при score от 45 одобряет исходную запрошенную сумму по ставке SPEC
+для сохранённых score/goal, с пересчётом платежа и переплаты. Ограничение capacity
+в этом случае перекрывает сотрудник. Score и факторы остаются исходными.
+При score <45 — 409/BANK_RATE_UNAVAILABLE, без скоринга — 409/BANK_SCORING_REQUIRED.
+reject очищает финансовые поля и задаёт причину ручного отказа, рекомендации и дату +3 месяца.
+После OFFER_ACCEPTED, SIGNED и DISBURSED, а также в ходе проверок — 409/INVALID_TRANSITION.
+Подтверждение уже текущего APPROVED/REJECTED допустимо и добавляет событие.
+В журнале actor=bank, details содержит action/comment, previous_decision и новые условия.
+decision.manual=true; ручной результат сохраняется после перезапуска.
+Комментарий виден клиенту в журнале заявки — это не приватная заметка сотрудника.
+
 После получения контракта фронтенда он приоритетнее этого черновика,
 если не противоречит SCORING_SPEC.
