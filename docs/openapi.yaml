@@ -1,102 +1,536 @@
-# ЧЕРНОВИК бэкенда, сверить с контрактом фронтенда
-# Только перечень маршрутов; схемы и ошибки ещё не согласованы.
 openapi: 3.1.0
 info:
-  title: Умный кредитный кабинет — черновик
-  version: 0.0.0-draft
+  title: Умный кредитный кабинет предпринимателя — API
+  version: 1.0.0
+  description: |
+    Общий контракт фронтенда и бэкенда (хакатон Альфа-Банка / Changellenge).
+    Правила расчёта — docs/SCORING_SPEC.md (он главнее этого файла по числам).
+
+    Общие правила:
+    - Все маршруты под префиксом /api. Формат — JSON, кодировка UTF-8.
+    - Деньги — целые рубли (integer), округление half-up. Ставка — число в % годовых (19, 21.5, 24).
+    - Даты-время — ISO 8601 с часовым поясом (date-time); даты без времени — date (YYYY-MM-DD).
+    - Ошибки всегда в форме Error {code, message, details}; message — понятный человеку текст на русском.
+    - Все данные синтетические; ЕГРЮЛ, БКИ, подписание и выдача — симуляции.
+servers:
+  - url: /api
+    description: Через nginx фронтенда (Docker)
+  - url: http://localhost:8000/api
+    description: Локальная разработка бэкенда
+
+tags:
+  - name: system
+  - name: companies
+  - name: applications
+  - name: feed
+  - name: demo
+  - name: bank
+
 paths:
-  /api/health:
+  /health:
     get:
+      tags: [system]
       summary: Проверка доступности
+      operationId: getHealth
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/demo-profiles:
+          description: Сервис работает
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+
+  /demo-profiles:
     get:
-      summary: Демо-профили
+      tags: [companies]
+      summary: Три демо-профиля для быстрого старта
+      operationId: listDemoProfiles
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/companies/lookup:
+          description: Список профилей в порядке «Идеальный, Средний, Рискованный»
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DemoProfile' }
+
+  /companies/lookup:
     get:
-      summary: Поиск по ИНН
+      tags: [companies]
+      summary: Поиск компании по ИНН (симулятор ЕГРЮЛ)
+      operationId: lookupCompany
+      parameters:
+        - name: inn
+          in: query
+          required: true
+          description: 10 цифр (юрлицо) или 12 цифр (ИП)
+          schema: { type: string, pattern: '^(\d{10}|\d{12})$' }
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/applications:
+          description: Компания найдена в синтетическом реестре
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Company' }
+        '404':
+          description: Не найдена (UI предлагает заполнить карточку вручную)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: COMPANY_NOT_FOUND, message: 'Компания с таким ИНН не найдена в реестре. Заполните данные вручную.', details: { inn: '7700000000' } }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /applications:
     post:
-      summary: Создать заявку
+      tags: [applications]
+      summary: Создать и отправить заявку
+      description: |
+        Сразу возвращает 201 со статусом SUBMITTED. Дальше сервер сам ведёт заявку по этапам
+        (по PIPELINE_STEP_SECONDS на этап): CHECKING_EGRUL → CHECKING_BKI → SCORING → решение.
+        Клиент опрашивает GET /applications/{id} примерно раз в 700 мс.
+        Повтор с тем же Idempotency-Key возвращает ту же заявку (200) и не создаёт новую.
+      operationId: createApplication
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Уникальная строка (UUID) на одно нажатие «Отправить заявку в банк»
+          schema: { type: string, maxLength: 100 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApplicationCreate' }
+            example:
+              company: { inn: '7712345678', name: 'ООО «Альфа Ритейл»', annual_revenue: 180000000, monthly_payments: 400000, credit_history: excellent, business_age_years: 7, segment: retail }
+              requested_amount: 10000000
+              term_months: 36
+              goal: working_capital
       responses:
         '201':
-          description: Предварительный успешный ответ; схема будет согласована
+          description: Заявка создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '200':
+          description: Повтор с тем же Idempotency-Key — возвращена ранее созданная заявка
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '422': { $ref: '#/components/responses/ValidationError' }
     get:
-      summary: История заявок
+      tags: [applications]
+      summary: История заявок («Мои заявки»), новые сверху
+      operationId: listApplications
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/applications/{id}:
+          description: Краткие карточки заявок
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ApplicationSummary' }
+
+  /applications/{id}:
     get:
-      summary: Получить заявку
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      tags: [applications]
+      summary: Полная заявка (опрашивается во время конвейера)
+      operationId: getApplication
+      parameters: [ { $ref: '#/components/parameters/ApplicationId' } ]
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/applications/{id}/accept-offer:
+          description: Заявка
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /applications/{id}/accept-offer:
     post:
-      summary: Принять предложение
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      tags: [applications]
+      summary: Принять встречное предложение
+      description: Разрешено только из COUNTER_OFFER → OFFER_ACCEPTED. Для APPROVED не нужно — сразу sign.
+      operationId: acceptOffer
+      parameters: [ { $ref: '#/components/parameters/ApplicationId' } ]
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/applications/{id}/sign:
+          description: Предложение принято
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/InvalidTransition' }
+
+  /applications/{id}/sign:
     post:
-      summary: Подписать заявку
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      tags: [applications]
+      summary: Подписать договор кодом (демо-код всегда 1234)
+      description: |
+        Разрешено из APPROVED и OFFER_ACCEPTED. Успех → SIGNED, затем сервер сам через ~1 сек
+        переводит в DISBURSED. Лимит — 5 неверных попыток на заявку.
+      operationId: signApplication
+      parameters: [ { $ref: '#/components/parameters/ApplicationId' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignRequest' }
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/feed:
+          description: Подписано (status = SIGNED)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '400':
+          description: Неверный код
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: INVALID_SIGN_CODE, message: 'Неверный код. Осталось попыток: 4.', details: { attempts_left: 4 } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/InvalidTransition' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429':
+          description: Попытки закончились
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: TOO_MANY_ATTEMPTS, message: 'Попытки ввода кода закончились. Начните новую заявку.', details: { attempts_left: 0 } }
+
+  /applications/{id}/retry:
+    post:
+      tags: [applications]
+      summary: Повторить проверки после сбоя внешнего сервиса (опционально)
+      description: |
+        Разрешено только из NEEDS_RECHECK. Заявка возвращается в конвейер с этапа, который упал
+        (обычно CHECKING_BKI). Сбой включается в бэкенде через SIMULATE_BKI_FAILURE=true.
+      operationId: retryApplication
+      parameters: [ { $ref: '#/components/parameters/ApplicationId' } ]
+      responses:
+        '200':
+          description: Заявка снова в конвейере
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/InvalidTransition' }
+
+  /feed:
     get:
-      summary: Материалы ленты
-      responses:
-        '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/demo/reset:
-    post:
-      summary: Сброс демо
-      responses:
-        '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/bank/applications:
-    get:
-      summary: Банковская очередь
-      responses:
-        '200':
-          description: Предварительный успешный ответ; схема будет согласована
-  /api/bank/applications/{id}/decision:
-    post:
-      summary: Ручное решение
+      tags: [feed]
+      summary: Умная лента материалов под сегмент клиента
+      operationId: getFeed
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - name: segment
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/FeedSegment' }
+        - name: context
+          in: query
+          required: false
+          description: rejected — первыми идут материалы про долговую нагрузку и кредитную историю
+          schema: { type: string, enum: [default, rejected], default: default }
       responses:
         '200':
-          description: Предварительный успешный ответ; схема будет согласована
+          description: 4–5 материалов, отсортированы по приоритету
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeedResponse' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /demo/reset:
+    post:
+      tags: [demo]
+      summary: Сбросить демо — удалить все заявки, seed-данные остаются
+      operationId: resetDemo
+      responses:
+        '200':
+          description: Сброшено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResetResult' }
+
+  /bank/applications:
+    get:
+      tags: [bank]
+      summary: Очередь заявок для сотрудника банка (опционально)
+      operationId: listBankApplications
+      security: [ { BankToken: [] } ]
+      responses:
+        '200':
+          description: Все заявки с решением и факторами
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Application' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /bank/applications/{id}/decision:
+    post:
+      tags: [bank]
+      summary: Ручное решение сотрудника (перекрывает автоматическое)
+      operationId: bankDecision
+      security: [ { BankToken: [] } ]
+      parameters: [ { $ref: '#/components/parameters/ApplicationId' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BankDecisionRequest' }
+      responses:
+        '200':
+          description: Решение применено (decision.decided_by = bank)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/InvalidTransition' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+components:
+  securitySchemes:
+    BankToken:
+      type: apiKey
+      in: header
+      name: X-Bank-Token
+      description: Значение из env BANK_API_TOKEN (по умолчанию demo-bank-token)
+
+  parameters:
+    ApplicationId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+
+  responses:
+    ValidationError:
+      description: Ошибка валидации входных данных
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: VALIDATION_ERROR, message: 'Для кассового разрыва срок не больше 12 месяцев.', details: { field: term_months, max: 12 } }
+    NotFound:
+      description: Заявка не найдена
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: NOT_FOUND, message: 'Заявка не найдена.', details: {} }
+    InvalidTransition:
+      description: Действие недопустимо в текущем статусе
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: INVALID_TRANSITION, message: 'Сначала примите встречное предложение.', details: { status: COUNTER_OFFER, action: sign } }
+    Unauthorized:
+      description: Нет или неверный X-Bank-Token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: UNAUTHORIZED, message: 'Нужен токен сотрудника банка.', details: {} }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+          description: Машинный код ошибки
+          enum: [VALIDATION_ERROR, NOT_FOUND, COMPANY_NOT_FOUND, INVALID_TRANSITION, INVALID_SIGN_CODE, TOO_MANY_ATTEMPTS, UNAUTHORIZED, INTERNAL_ERROR]
+        message: { type: string, description: Текст для пользователя на русском }
+        details: { type: object, additionalProperties: true }
+
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ok] }
+        version: { type: string }
+
+    Segment:
+      type: string
+      enum: [retail, services, production]
+    FeedSegment:
+      type: string
+      enum: [retail, services, production, general]
+      default: general
+    CreditHistory:
+      type: string
+      enum: [excellent, fair, poor]
+    Goal:
+      type: string
+      enum: [working_capital, equipment, cash_gap]
+    ApplicationStatus:
+      type: string
+      enum: [DRAFT, SUBMITTED, CHECKING_EGRUL, CHECKING_BKI, SCORING, APPROVED, COUNTER_OFFER, REJECTED, OFFER_ACCEPTED, SIGNED, DISBURSED, NEEDS_RECHECK]
+      description: |
+        Человекопонятные названия (status_label): DRAFT «Черновик», SUBMITTED «Заявка отправлена»,
+        CHECKING_EGRUL «Проверка в ЕГРЮЛ», CHECKING_BKI «Запрос в БКИ», SCORING «Скоринг»,
+        APPROVED «Одобрено», COUNTER_OFFER «Встречное предложение», REJECTED «Отказ»,
+        OFFER_ACCEPTED «Условия приняты», SIGNED «Договор подписан», DISBURSED «Кредит выдан»,
+        NEEDS_RECHECK «Нужна повторная проверка».
+
+    Company:
+      type: object
+      required: [inn, name, annual_revenue, monthly_payments, credit_history, business_age_years, segment]
+      properties:
+        inn: { type: string, pattern: '^(\d{10}|\d{12})$' }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        annual_revenue: { type: integer, minimum: 1, description: Выручка за год, ₽ }
+        monthly_payments: { type: integer, minimum: 0, description: Текущие платежи по кредитам, ₽/мес }
+        credit_history: { $ref: '#/components/schemas/CreditHistory' }
+        business_age_years: { type: integer, minimum: 0, maximum: 100 }
+        segment: { $ref: '#/components/schemas/Segment' }
+
+    DemoProfile:
+      type: object
+      required: [id, label, risk_level, company]
+      properties:
+        id: { type: string, example: alfa-retail }
+        label: { type: string, example: 'ООО Альфа Ритейл (Идеальный)' }
+        risk_level: { type: string, enum: [ideal, medium, risky] }
+        company: { $ref: '#/components/schemas/Company' }
+
+    ApplicationCreate:
+      type: object
+      required: [company, requested_amount, term_months, goal]
+      properties:
+        company: { $ref: '#/components/schemas/Company' }
+        requested_amount: { type: integer, minimum: 300000, maximum: 15000000 }
+        term_months:
+          type: integer
+          minimum: 3
+          maximum: 36
+          description: Для goal = cash_gap не больше 12
+        goal: { $ref: '#/components/schemas/Goal' }
+
+    PipelineStage:
+      type: object
+      required: [code, title, state]
+      properties:
+        code: { type: string, enum: [egrul, bki, scoring] }
+        title: { type: string, example: 'Проверка реквизитов в ЕГРЮЛ' }
+        state: { type: string, enum: [pending, in_progress, done, failed] }
+        started_at: { type: [string, 'null'], format: date-time }
+        finished_at: { type: [string, 'null'], format: date-time }
+
+    Factor:
+      type: object
+      required: [code, name, points, max_points, explanation]
+      properties:
+        code: { type: string, enum: [credit_history, debt_load, revenue, business_age, amount_to_revenue] }
+        name: { type: string, example: 'Кредитная история' }
+        points: { type: number, description: 'Баллы фактора (можно дробные, например 18.0)' }
+        max_points: { type: integer, example: 35 }
+        explanation: { type: string, example: 'Платежи по прошлым кредитам вносились без просрочек.' }
+
+    Decision:
+      type: object
+      description: Появляется, когда заявка прошла SCORING (иначе null)
+      required: [outcome, score, factors, decided_by]
+      properties:
+        outcome: { type: string, enum: [APPROVED, COUNTER_OFFER, REJECTED] }
+        score: { type: integer, minimum: 0, maximum: 100 }
+        factors:
+          type: array
+          items: { $ref: '#/components/schemas/Factor' }
+        rate: { type: [number, 'null'], description: '% годовых; null при отказе со score < 45' }
+        approved_amount: { type: [integer, 'null'], description: 'Одобренная сумма; null при отказе' }
+        term_months: { type: integer }
+        monthly_payment: { type: [integer, 'null'] }
+        total_payment: { type: [integer, 'null'], description: monthly_payment * term_months }
+        overpayment: { type: [integer, 'null'], description: total_payment − approved_amount }
+        max_amount: { type: [integer, 'null'], description: 'Максимум по платёжной способности; null если capacity ≤ 0 или rate = null' }
+        capacity: { type: integer, description: 'Платёжная способность ₽/мес (может быть отрицательной)' }
+        debt_ratio: { type: number, description: 'd = monthly_payments / (annual_revenue/12)' }
+        rejection_reason: { type: [string, 'null'], example: 'Высокая долговая нагрузка' }
+        recommendations:
+          type: array
+          items: { type: string }
+          description: '2–3 совета при отказе, иначе пусто'
+        reapply_date: { type: [string, 'null'], format: date, description: 'Сегодня + 3 календарных месяца, только при отказе' }
+        decided_by: { type: string, enum: [system, bank] }
+        bank_comment: { type: [string, 'null'] }
+
+    Application:
+      type: object
+      required: [id, status, status_label, created_at, updated_at, company, requested_amount, term_months, goal, goal_label, pipeline, decision, sign_attempts_left]
+      properties:
+        id: { type: string, example: 'app_8f3c1a' }
+        status: { $ref: '#/components/schemas/ApplicationStatus' }
+        status_label: { type: string, example: 'Запрос в БКИ' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        company: { $ref: '#/components/schemas/Company' }
+        requested_amount: { type: integer }
+        term_months: { type: integer }
+        goal: { $ref: '#/components/schemas/Goal' }
+        goal_label: { type: string, example: 'Пополнение оборотных средств' }
+        pipeline:
+          type: array
+          description: Всегда три этапа в порядке egrul, bki, scoring
+          items: { $ref: '#/components/schemas/PipelineStage' }
+        decision:
+          oneOf:
+            - $ref: '#/components/schemas/Decision'
+            - type: 'null'
+        sign_attempts_left: { type: integer, minimum: 0, maximum: 5 }
+        signed_at: { type: [string, 'null'], format: date-time }
+        disbursed_at: { type: [string, 'null'], format: date-time }
+        error_message: { type: [string, 'null'], description: 'Пояснение для NEEDS_RECHECK, например «БКИ временно недоступно»' }
+
+    ApplicationSummary:
+      type: object
+      required: [id, status, status_label, created_at, company_name, requested_amount, goal]
+      properties:
+        id: { type: string }
+        status: { $ref: '#/components/schemas/ApplicationStatus' }
+        status_label: { type: string }
+        created_at: { type: string, format: date-time }
+        company_name: { type: string }
+        requested_amount: { type: integer }
+        approved_amount: { type: [integer, 'null'] }
+        goal: { $ref: '#/components/schemas/Goal' }
+
+    SignRequest:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, pattern: '^\d{4}$', example: '1234' }
+
+    FeedItem:
+      type: object
+      required: [id, title, summary, body, tag, read_minutes, synthetic]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        summary: { type: string, description: 2–3 предложения для карточки }
+        body: { type: string, description: Полный текст для модалки }
+        tag: { type: string, example: 'Финансы' }
+        read_minutes: { type: integer, minimum: 1 }
+        synthetic: { type: boolean, const: true, description: Материал помечен как синтетический }
+
+    FeedResponse:
+      type: object
+      required: [segment, segment_label, reason, items]
+      properties:
+        segment: { $ref: '#/components/schemas/FeedSegment' }
+        segment_label: { type: string, example: 'Для ритейла' }
+        reason: { type: string, example: 'Почему вы это видите: ваш сегмент — розничная торговля.' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/FeedItem' }
+
+    ResetResult:
+      type: object
+      required: [status, removed_applications]
+      properties:
+        status: { type: string, enum: [ok] }
+        removed_applications: { type: integer, minimum: 0 }
+
+    BankDecisionRequest:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [approve, reject] }
+        comment: { type: string, maxLength: 500 }

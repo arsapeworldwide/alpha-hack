@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+/* Цвета и шрифт проекта (FRONTEND_BRIEF, раздел «Дизайн»). Используются как bg-accent, text-ink и т. д. */
+@theme {
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-page: #f2f3f5;
+  --color-ink: #0b1f35;
+  --color-muted: #5b6b7d;
+  --color-line: #e3e6ea;
+  --color-accent: #ef3124;
+  --color-accent-dark: #c9251a;
+  --color-success: #21a038;
+  --color-warning: #f5a623;
+  --color-info: #2f6fde;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-page);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Уважаем настройку «уменьшить движение» в системе пользователя */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
