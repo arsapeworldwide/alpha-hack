@@ -70,6 +70,17 @@ describe('reducer', () => {
     expect(s.form).toEqual({ requestedAmount: 10_000_000, termMonths: 24, goal: 'equipment' });
   });
 
+  it('«Изменить условия» возвращает на калькулятор с теми же данными', () => {
+    let s = reducer(initialState, { type: 'SELECT_PROFILE', profile: alfa });
+    s = reducer(s, { type: 'SET_FORM', patch: { requestedAmount: 5_000_000 } });
+    s = reducer(s, { type: 'APPLICATION_RECEIVED', application: app('APPROVED') });
+    s = reducer(s, { type: 'EDIT_CONDITIONS' });
+    expect(s.step).toBe(2);
+    expect(s.applicationId).toBeNull();
+    expect(s.company?.name).toBe(alfa.company.name);
+    expect(s.form.requestedAmount).toBe(5_000_000);
+  });
+
   it('лента: сегмент компании, после отказа — режим rejected', () => {
     expect(feedQuery(initialState)).toEqual({ segment: 'general', context: 'default' });
     let s = reducer(initialState, { type: 'SELECT_PROFILE', profile: DEMO_PROFILES[2] });

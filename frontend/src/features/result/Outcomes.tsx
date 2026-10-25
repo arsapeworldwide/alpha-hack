@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Application, Decision } from '../../api/types';
+import { BackLink } from '../../components/ui/BackLink';
 import { Button } from '../../components/ui/Button';
 import { StepHeading } from '../../components/ui/Panel';
 import { formatDate, formatRub, formatRubShort } from '../../lib/format';
@@ -30,9 +31,11 @@ function BigAmount({ value, caption }: { value: number; caption: string }) {
 
 export function Approved({ app, decision }: { app: Application; decision: Decision }) {
   const [signing, setSigning] = useState(false);
+  const { dispatch } = useStore();
   const accepted = app.status === 'OFFER_ACCEPTED';
   return (
     <div>
+      <BackLink label="Изменить условия" onClick={() => dispatch({ type: 'EDIT_CONDITIONS' })} />
       <StepHeading title={accepted ? 'Новые условия приняты' : 'Кредит одобрен'} lead="Осталось подписать договор онлайн — это займёт минуту." />
       <div className="max-w-[640px]">
         <BigAmount value={decision.approved_amount ?? 0} caption={`${app.goal_label}, ставка ${decision.rate}%`} />
@@ -64,6 +67,7 @@ export function CounterOffer({ app, decision }: { app: Application; decision: De
 
   return (
     <div>
+      <BackLink label="Изменить условия" onClick={() => dispatch({ type: 'EDIT_CONDITIONS' })} />
       <StepHeading
         title="Можем одобрить меньшую сумму"
         lead={`Мы не можем выдать ${formatRubShort(app.requested_amount)}, но одобрили вам ${formatRubShort(decision.approved_amount ?? 0)}.`}
@@ -84,7 +88,7 @@ export function CounterOffer({ app, decision }: { app: Application; decision: De
         {error && <p className="mt-4 text-sm text-accent-dark" role="alert">{error}</p>}
         <div className="mt-8 flex flex-wrap gap-3">
           <Button size="lg" loading={accepting} onClick={() => void accept()}>Принять новые условия</Button>
-          <Button size="lg" variant="secondary" onClick={() => dispatch({ type: 'START_OVER' })}>Изменить заявку</Button>
+          <Button size="lg" variant="secondary" onClick={() => dispatch({ type: 'EDIT_CONDITIONS' })}>Изменить сумму или срок</Button>
         </div>
         <div className="mt-16"><FactorList decision={decision} /></div>
       </div>
@@ -97,6 +101,7 @@ export function Rejected({ app, decision }: { app: Application; decision: Decisi
   const isDebt = decision.rejection_reason === 'Высокая долговая нагрузка';
   return (
     <div>
+      <BackLink label="Изменить условия" onClick={() => dispatch({ type: 'EDIT_CONDITIONS' })} />
       <StepHeading title="Сейчас не можем одобрить кредит" lead={`Причина: ${decision.rejection_reason?.toLowerCase()}.`} />
       <div className="max-w-[640px]">
         {isDebt && <p className="text-[15px]">{loadExplanation(app)}</p>}

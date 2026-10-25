@@ -27,6 +27,9 @@ export function useSubmitApplication(): { submit: () => Promise<void>; sending: 
     setError(null);
     try {
       const application = await api.createApplication(body, keyRef.current);
+      // Заявка создана — следующая отправка (например, после «Изменить условия») будет новой заявкой.
+      // Ключ живёт только пока идёт одна попытка: двойной клик и повтор после сбоя сети не создадут дубль.
+      keyRef.current = null;
       dispatch({ type: 'APPLICATION_RECEIVED', application });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось отправить заявку. Попробуйте ещё раз.');

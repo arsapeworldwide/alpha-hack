@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Check, Loader2 } from 'lucide-react';
 import type { PipelineStage } from '../../api/types';
+import { BackLink } from '../../components/ui/BackLink';
 import { Button } from '../../components/ui/Button';
 import { StepHeading } from '../../components/ui/Panel';
 import { useStore } from '../../state/context';
@@ -65,6 +66,7 @@ export function PipelineStep() {
 
   return (
     <div>
+      <BackLink label="Отменить и изменить условия" onClick={() => dispatch({ type: 'EDIT_CONDITIONS' })} />
       <StepHeading
         title={needsRecheck ? 'Нужна повторная проверка' : 'Проверяем заявку'}
         lead={needsRecheck ? 'Один из сервисов временно не ответил. С вашей заявкой всё в порядке.' : 'Обычно это занимает несколько секунд. Страницу можно не обновлять.'}

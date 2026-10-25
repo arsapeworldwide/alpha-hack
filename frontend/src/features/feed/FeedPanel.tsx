@@ -3,6 +3,7 @@ import type { FeedItem, FeedResponse, Segment } from '../../api/types';
 import { useStore } from '../../state/context';
 import { feedQuery } from '../../state/reducer';
 import { FeedArticle } from './FeedArticle';
+import { iconForTag, REJECTED_PALETTE, SEGMENT_PALETTE } from './feedStyle';
 
 const TABS: Segment[] = ['retail', 'services', 'production'];
 const TAB_LABELS: Record<Segment, string> = { retail: 'Ритейл', services: 'Услуги', production: 'Производство' };
@@ -35,6 +36,9 @@ export function FeedPanel() {
 
   const reason = manual && manual !== auto.segment ? `Раздел «${TAB_LABELS[manual]}»` : feed?.reason;
   const [lead, ...rest] = feed?.items ?? [];
+  const palette = SEGMENT_PALETTE[feed?.segment ?? 'general'];
+  const leadPalette = lead?.tag === 'Повысить шансы' ? REJECTED_PALETTE : palette;
+  const LeadIcon = iconForTag(lead?.tag ?? '');
 
   return (
     <section aria-labelledby="feed-title">
@@ -66,23 +70,34 @@ export function FeedPanel() {
           <button
             type="button"
             onClick={() => setOpen(lead)}
-            className="flex flex-col rounded-3xl bg-surface p-8 text-left transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            style={{ backgroundColor: leadPalette.bg }}
+            className="relative flex flex-col overflow-hidden rounded-3xl p-8 text-left transition-[filter] hover:brightness-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
-            <span className="text-sm text-muted">{lead.tag}</span>
-            <span className="mt-4 text-[26px] font-bold leading-[1.15] tracking-[-0.02em]">{lead.title}</span>
-            <span className="mt-4 text-[16px] leading-relaxed text-muted">{lead.summary}</span>
-            <span className="mt-auto pt-8 text-[15px] font-semibold">Читать, {lead.read_minutes} мин</span>
+            <LeadIcon size={132} strokeWidth={1.25} className="pointer-events-none absolute -right-4 -top-4 opacity-[0.14]" style={{ color: leadPalette.fg }} aria-hidden />
+            <span className="relative text-sm font-medium" style={{ color: leadPalette.fg }}>{lead.tag}</span>
+            <span className="relative mt-4 max-w-[26ch] text-[26px] font-bold leading-[1.15] tracking-[-0.02em]">{lead.title}</span>
+            <span className="relative mt-4 text-[16px] leading-relaxed text-ink/70">{lead.summary}</span>
+            <span className="relative mt-auto pt-8 text-[15px] font-semibold">Читать, {lead.read_minutes} мин</span>
           </button>
 
           <ul className="divide-y divide-line">
-            {rest.map((item) => (
-              <li key={item.id}>
-                <button type="button" onClick={() => setOpen(item)} className="group block w-full py-5 text-left first:pt-0 focus-visible:outline-2 focus-visible:outline-ink">
-                  <span className="text-sm text-muted">{item.tag}, {item.read_minutes} мин</span>
-                  <span className="mt-1 block text-[17px] font-semibold leading-snug group-hover:underline group-hover:underline-offset-4">{item.title}</span>
-                </button>
-              </li>
-            ))}
+            {rest.map((item) => {
+              const Icon = iconForTag(item.tag);
+              const pal = item.tag === 'Повысить шансы' ? REJECTED_PALETTE : palette;
+              return (
+                <li key={item.id}>
+                  <button type="button" onClick={() => setOpen(item)} className="group flex w-full items-start gap-4 py-5 text-left first:pt-0 focus-visible:outline-2 focus-visible:outline-ink">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: pal.bg, color: pal.fg }} aria-hidden>
+                      <Icon size={20} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="text-sm text-muted">{item.tag}, {item.read_minutes} мин</span>
+                      <span className="mt-1 block text-[17px] font-semibold leading-snug group-hover:underline group-hover:underline-offset-4">{item.title}</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

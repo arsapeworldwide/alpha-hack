@@ -1,6 +1,6 @@
 import { CASH_GAP_MAX_TERM } from '../../api/scoring';
 import { AMOUNT_LIMITS, TERM_LIMITS } from '../../api/seed';
-import { Button } from '../../components/ui/Button';
+import { BackLink } from '../../components/ui/BackLink';
 import { StepHeading } from '../../components/ui/Panel';
 import { SliderField } from '../../components/ui/Slider';
 import { formatMonths, formatRubShort } from '../../lib/format';
@@ -17,6 +17,7 @@ export function CalculatorStep() {
 
   return (
     <div>
+      <BackLink label="Назад к компании" onClick={() => dispatch({ type: 'GO_TO_STEP', step: 1 })} />
       <StepHeading title="Сумма и срок" lead="Двигайте сумму и срок — ниже видно, как банк оценит нагрузку." />
 
       <div className="space-y-6">
@@ -53,9 +54,6 @@ export function CalculatorStep() {
         <SafetyMarginPanel />
       </div>
 
-      <div className="mt-10">
-        <Button variant="link" onClick={() => dispatch({ type: 'GO_TO_STEP', step: 1 })}>Назад к компании</Button>
-      </div>
     </div>
   );
 }
