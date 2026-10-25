@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { IN_PROGRESS_STATUSES } from '../api/stateMachine';
 import { useStore } from './context';
 
 export const POLL_INTERVAL_MS = 700;
@@ -12,7 +11,7 @@ export function usePollApplication(): void {
   const { api, state, dispatch } = useStore();
   const id = state.applicationId;
   const status = state.application?.status;
-  const active = Boolean(id && status && IN_PROGRESS_STATUSES.includes(status));
+  const active = Boolean(id && status && status !== 'DISBURSED');
   const inFlight = useRef(false);
 
   useEffect(() => {

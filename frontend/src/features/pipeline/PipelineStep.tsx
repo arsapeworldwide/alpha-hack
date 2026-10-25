@@ -5,6 +5,7 @@ import { BackLink } from '../../components/ui/BackLink';
 import { Button } from '../../components/ui/Button';
 import { StepHeading } from '../../components/ui/Panel';
 import { useStore } from '../../state/context';
+import { useAuth } from '../auth/context';
 
 const TEXT: Record<PipelineStage['code'], { active: string; done: string }> = {
   egrul: { active: 'Проверяем реквизиты в ЕГРЮЛ…', done: 'Реквизиты совпадают с реестром' },
@@ -38,6 +39,7 @@ function StageRow({ stage }: { stage: PipelineStage }) {
 
 /** Шаг 3. Конвейер проверок: этапы двигает сервер, экран только показывает их состояние. */
 export function PipelineStep() {
+  const { user } = useAuth();
   const { api, state, dispatch } = useStore();
   const app = state.application;
   const [retrying, setRetrying] = useState(false);
@@ -85,7 +87,7 @@ export function PipelineStep() {
           <div className="mt-6 rounded-2xl bg-[#fff1d6] p-5">
             <p className="text-[15px] text-[#6b4500]">{app.error_message}</p>
             {retryError && <p className="mt-2 text-sm text-accent-dark" role="alert">{retryError}</p>}
-            <Button className="mt-4" loading={retrying} onClick={() => void retry()}>Повторить проверку</Button>
+            <Button className="mt-4" loading={retrying} disabled={user.role !== 'client_owner'} onClick={() => void retry()}>Повторить проверку</Button>
           </div>
         )}
       </div>

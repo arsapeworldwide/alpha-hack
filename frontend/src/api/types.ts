@@ -70,7 +70,7 @@ export interface Factor {
 
 export interface Decision {
   outcome: DecisionOutcome;
-  score: number;
+  score: number | null;
   factors: Factor[];
   rate: number | null;
   approved_amount: number | null;
@@ -89,6 +89,7 @@ export interface Decision {
 }
 
 export interface Application {
+  events?: { occurred_at: string; from_status: string | null; to_status: string; actor: string; details: Record<string, unknown> }[];
   id: string;
   status: ApplicationStatus;
   status_label: string;
@@ -142,6 +143,7 @@ export interface ResetResult {
 
 export type ErrorCode =
   | 'VALIDATION_ERROR'
+  | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'COMPANY_NOT_FOUND'
   | 'INVALID_TRANSITION'

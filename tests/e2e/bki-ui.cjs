@@ -1,3 +1,4 @@
+const { signIn } = require('./auth-helpers.cjs');
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -17,7 +18,7 @@ async function main() {
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto(base);
+    await signIn(page, context, base);
     if (mode === 'fail') {
       await page.getByRole('radio', { name: /Альфа Ритейл/ }).click();
       await page.getByRole('button', { name: 'Продолжить', exact: true }).click();

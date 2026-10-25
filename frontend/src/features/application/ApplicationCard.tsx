@@ -11,12 +11,14 @@ import { BASE_RATE } from '../../api/scoring';
 import { safetyMargin } from '../calculator/marginMath';
 import { PaymentPreview } from '../calculator/PaymentPreview';
 import { useSubmitApplication } from '../calculator/useSubmitApplication';
+import { useAuth } from '../auth/context';
 
 function stateFor(step: number, own: number): JourneyItem['state'] {
   return step > own ? 'done' : step === own ? 'current' : 'todo';
 }
 
 export function ApplicationCard() {
+  const { user } = useAuth();
   const { state, dispatch } = useStore();
   const { step, company, form, application } = state;
   const { submit, sending, error, invalid } = useSubmitApplication();
@@ -72,9 +74,10 @@ export function ApplicationCard() {
         <div className="mt-6 border-t border-line pt-6">
           <PaymentPreview amount={form.requestedAmount} termMonths={form.termMonths} rate={forecastRate ?? BASE_RATE[form.goal]} rateIsForecast={forecastRate !== null} />
           {(invalid || error) && company && <p className="mt-4 rounded-xl bg-[#fde6e4] px-4 py-3 text-sm text-accent-dark" role="alert">{invalid?.message ?? error}</p>}
-          <Button size="lg" block className="mt-6" loading={sending} disabled={Boolean(invalid)} onClick={() => void submit()}>
+          <Button size="lg" block className="mt-6" loading={sending} disabled={Boolean(invalid) || user.role !== 'client_owner'} onClick={() => void submit()}>
             Отправить заявку
           </Button>
+          {user.role === 'client_accountant' && <p className="mt-3 text-sm">Подать и подписать заявку может руководитель. Откройте существующую заявку из истории.</p>}
           <p className="mt-3 text-center text-[13px] text-muted">Расчёт предварительный, банк подтвердит после проверки</p>
         </div>
       )}

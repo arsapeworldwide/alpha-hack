@@ -25,10 +25,11 @@ export function CompanySummary({ company }: { company: Company }) {
             <div key={label}>
               <dt className="text-sm text-muted">{label}</dt>
               <dd className="mt-0.5 font-semibold tabular-nums">{value}</dd>
+              <dd className="mt-1 text-xs text-muted">Источник: {label === 'Кредитная история' || label === 'Платежи по кредитам' ? 'симулятор БКИ' : 'демо-реестр'}</dd>
             </div>
           ))}
         </dl>
-      <p className="mt-4 text-sm text-muted">Данные из демо-реестра. Изменить показатели компании вручную нельзя.</p>
+      <p className="mt-4 text-sm text-muted">Источники: реквизиты, выручка и возраст — демо-реестр; кредитная история и платежи — симулятор БКИ. Все данные синтетические. Изменить показатели вручную нельзя.</p>
     </section>
   );
 }

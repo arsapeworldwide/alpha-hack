@@ -2,6 +2,7 @@
 
 import type { CreditApi } from './client';
 import { ApiError, type ErrorBody } from './types';
+import { sessionToken } from './sessionApi';
 
 const TIMEOUT_MS = 10_000;
 
@@ -15,7 +16,7 @@ export function createHttpApi(baseUrl: string): CreditApi {
     try {
       response = await fetch(`${base}${path}`, {
         method,
-        headers: { Accept: 'application/json', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers },
+        headers: { Accept: 'application/json', ...(sessionToken() ? { Authorization: `Bearer ${sessionToken()}` } : {}), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers },
         body: body !== undefined ? JSON.stringify(body) : undefined,
         signal: controller.signal,
       });
@@ -26,7 +27,10 @@ export function createHttpApi(baseUrl: string): CreditApi {
     }
 
     const data: unknown = await response.json().catch(() => null);
-    if (!response.ok) throw new ApiError(response.status, toErrorBody(data, response.status));
+    if (!response.ok) {
+      if (response.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new Event('session-expired'));
+      throw new ApiError(response.status, toErrorBody(data, response.status));
+    }
     return data as T;
   }
 

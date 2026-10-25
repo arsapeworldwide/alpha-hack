@@ -1,3 +1,4 @@
+const { signIn } = require('./auth-helpers.cjs');
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 
@@ -11,7 +12,7 @@ async function main() {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   try {
-    await page.goto(base);
+    await signIn(page, context, base);
     const section = page.getByRole('region', { name: 'Полезное для бизнеса' });
     const tabs = section.getByRole('group', { name: 'Раздел ленты' });
     const seen = new Set();

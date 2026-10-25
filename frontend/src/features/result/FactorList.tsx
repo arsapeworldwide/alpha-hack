@@ -2,11 +2,13 @@ import type { Decision } from '../../api/types';
 
 /** «Что повлияло на решение»: пять факторов скоринга полосками с пояснением простым языком. */
 export function FactorList({ decision }: { decision: Decision }) {
+  const score = decision.score;
+  const rating = score === null ? '—' : score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 45 ? 'C' : 'D';
   return (
     <section aria-labelledby="factors-title">
       <div className="mb-5 flex items-baseline justify-between gap-4">
         <h2 id="factors-title" className="text-xl font-bold tracking-[-0.01em]">Что повлияло на решение</h2>
-        <p className="text-[15px] tabular-nums"><span className="font-bold">{decision.score}</span> <span className="text-muted">из 100 баллов</span></p>
+        <p className="text-[15px] tabular-nums"><span className="font-bold">{score ?? 'Не рассчитано'}</span> <span className="text-muted">{score === null ? '' : 'из 100 баллов'} · Рейтинг {rating}</span></p>
       </div>
       <ul className="space-y-5">
         {decision.factors.map((f) => {

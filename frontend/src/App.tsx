@@ -12,16 +12,19 @@ import { ResultStep } from './features/result/ResultStep';
 import { initials } from './lib/format';
 import { useStore } from './state/context';
 import { usePollApplication } from './state/usePollApplication';
+import { useAuth } from './features/auth/context';
+import { DemoControls } from './features/demo/DemoControls';
 
 /** Служебная полоса демо-режима: честно говорит, что данные синтетические, и даёт сброс. */
 function DemoBar() {
+  const { user } = useAuth();
   const { resetDemo } = useStore();
   const [resetting, setResetting] = useState(false);
   return (
     <div className="bg-ink text-white">
       <div className="mx-auto flex h-9 max-w-6xl items-center justify-between gap-4 px-4 text-[13px]">
         <span className="truncate text-white/80">Демо-режим: данные синтетические, интеграции смоделированы</span>
-        <button
+        {user.can_manage_demo && <button
           type="button"
           disabled={resetting}
           onClick={() => {
@@ -31,7 +34,7 @@ function DemoBar() {
           className="shrink-0 font-medium text-white underline-offset-4 hover:underline disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-white"
         >
           {resetting ? 'Сбрасываем…' : 'Сбросить демо'}
-        </button>
+        </button>}
       </div>
     </div>
   );
@@ -54,6 +57,7 @@ function CompanyChip() {
 }
 
 export default function App() {
+  const { user, logout } = useAuth();
   const { state } = useStore();
   usePollApplication();
   return (
@@ -63,10 +67,13 @@ export default function App() {
         <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between gap-4 px-4">
           <span className="text-xl font-bold tracking-[-0.02em]">Кредитный кабинет</span>
           <CompanyChip />
+          <span className="text-sm">{user.full_name}</span>
+          <button className="text-sm underline" onClick={() => void logout()}>Выйти</button>
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-20 pt-12">
+        <DemoControls />
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start xl:gap-16">
           <div className="min-w-0">
             {state.step === 1 && <ProfileStep />}

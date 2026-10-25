@@ -11,6 +11,21 @@ function mockFetch(status: number, body: unknown, isJson = true) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('HTTP-клиент (режим VITE_USE_MOCK=false)', () => {
+  it('передаёт сессию в Authorization, не меняя тело заявки', async () => {
+    vi.stubGlobal('sessionStorage', { getItem: () => 'test-session' });
+    const fetch = mockFetch(200, []);
+    await createHttpApi('/api').listApplications();
+    const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer test-session');
+  });
+
+  it('401 сообщает оболочке, что нужно вернуться на вход', async () => {
+    const dispatchEvent = vi.fn();
+    vi.stubGlobal('window', { dispatchEvent });
+    mockFetch(401, { code: 'UNAUTHORIZED', message: 'Войдите', details: {} });
+    await expect(createHttpApi('/api').listApplications()).rejects.toBeInstanceOf(ApiError);
+    expect(dispatchEvent.mock.calls[0][0].type).toBe('session-expired');
+  });
   it('ходит на /api с нужным методом, телом и Idempotency-Key', async () => {
     const fetch = mockFetch(201, { id: 'app_1' });
     const api = createHttpApi('/api');

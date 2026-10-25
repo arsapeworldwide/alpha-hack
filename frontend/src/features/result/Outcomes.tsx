@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { StepHeading } from '../../components/ui/Panel';
 import { formatDate, formatRub, formatRubShort } from '../../lib/format';
 import { useStore } from '../../state/context';
+import { useAuth } from '../auth/context';
 import { safetyMargin } from '../calculator/marginMath';
 import { SignModal } from '../signing/SignModal';
 import { FactorList } from './FactorList';
@@ -30,6 +31,7 @@ function BigAmount({ value, caption }: { value: number; caption: string }) {
 }
 
 export function Approved({ app, decision }: { app: Application; decision: Decision }) {
+  const { user } = useAuth();
   const [signing, setSigning] = useState(false);
   const { dispatch } = useStore();
   const accepted = app.status === 'OFFER_ACCEPTED';
@@ -40,7 +42,8 @@ export function Approved({ app, decision }: { app: Application; decision: Decisi
       <div className="max-w-[640px]">
         <BigAmount value={decision.approved_amount ?? 0} caption={`${app.goal_label}, ставка ${decision.rate}%`} />
         <div className="mt-8"><OfferSummary decision={decision} /></div>
-        <Button size="lg" className="mt-8" onClick={() => setSigning(true)}>Подписать договор онлайн</Button>
+        {user.role === 'client_owner' ? <Button size="lg" className="mt-8" onClick={() => setSigning(true)}>Подписать договор онлайн</Button> : <p className="mt-8 font-semibold">Подписать может руководитель</p>}
+        {decision.bank_comment && <p className="mt-4">Комментарий банка: {decision.bank_comment}</p>}
         <div className="mt-16"><FactorList decision={decision} /></div>
       </div>
       <SignModal open={signing} onClose={() => setSigning(false)} />
@@ -49,6 +52,7 @@ export function Approved({ app, decision }: { app: Application; decision: Decisi
 }
 
 export function CounterOffer({ app, decision }: { app: Application; decision: Decision }) {
+  const { user } = useAuth();
   const { api, dispatch } = useStore();
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +91,7 @@ export function CounterOffer({ app, decision }: { app: Application; decision: De
         <div className="mt-8"><OfferSummary decision={decision} /></div>
         {error && <p className="mt-4 text-sm text-accent-dark" role="alert">{error}</p>}
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button size="lg" loading={accepting} onClick={() => void accept()}>Принять новые условия</Button>
+          <Button size="lg" loading={accepting} disabled={user.role !== 'client_owner'} onClick={() => void accept()}>Принять новые условия</Button>
           <Button size="lg" variant="secondary" onClick={() => dispatch({ type: 'EDIT_CONDITIONS' })}>Изменить сумму или срок</Button>
         </div>
         <div className="mt-16"><FactorList decision={decision} /></div>
@@ -103,6 +107,7 @@ export function Rejected({ app, decision }: { app: Application; decision: Decisi
     <div>
       <BackLink label="Изменить условия" onClick={() => dispatch({ type: 'EDIT_CONDITIONS' })} />
       <StepHeading title="Сейчас не можем одобрить кредит" lead={`Причина: ${decision.rejection_reason?.toLowerCase()}.`} />
+      {decision.bank_comment && <p className="mt-4">Комментарий банка: {decision.bank_comment}</p>}
       <div className="max-w-[640px]">
         {isDebt && <p className="text-[15px]">{loadExplanation(app)}</p>}
 

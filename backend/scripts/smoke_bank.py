@@ -4,7 +4,7 @@ import os
 from decimal import Decimal
 from pathlib import Path
 
-from scripts.smoke_api import check, request, wait_for
+from scripts.smoke_api import authenticate, check, request, wait_for
 
 
 def review(base: str, application_id: str, action: str, headers: dict):
@@ -71,9 +71,10 @@ def main() -> None:
     if args.timeout <= 0:
         parser.error("timeout должен быть положительным")
     base = args.base_url.rstrip("/")
+    authenticate(base)
     headers = {"X-Bank-Token": os.environ.get("BANK_API_TOKEN", "demo-bank-token")}
     status, _ = request(base, "/bank/applications")
-    check(status == 401, "Банковская очередь не защищена")
+    check(status == 403, "Клиент получил доступ к банковской очереди")
     status, _ = request(base, "/bank/applications", headers=headers)
     check(status == 200, "Токен не подошёл; задайте BANK_API_TOKEN в окружении скрипта")
     if args.verify_report:

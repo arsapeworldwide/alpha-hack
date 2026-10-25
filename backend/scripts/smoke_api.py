@@ -1,11 +1,29 @@
 import argparse
 import json
+import os
 from decimal import Decimal
 from pathlib import Path
 from time import monotonic, sleep
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from uuid import uuid4
+
+SESSION_TOKEN = None
+
+
+def authenticate(base: str) -> None:
+    global SESSION_TOKEN
+    status, response = request(
+        base,
+        "/auth/login",
+        "POST",
+        {
+            "login": os.getenv("DEMO_LOGIN", "director"),
+            "password": os.getenv("DEMO_PASSWORD", "demo-credit-2026"),
+        },
+    )
+    check(status == 200, "Вход не выполнен; проверьте DEMO_LOGIN / DEMO_PASSWORD")
+    SESSION_TOKEN = response["access_token"]
 
 
 def check(condition: bool, message: str) -> None:
@@ -16,6 +34,8 @@ def check(condition: bool, message: str) -> None:
 def request(base: str, path: str, method="GET", payload=None, headers=None):
     body = json.dumps(payload).encode() if payload is not None else None
     request_headers = {"Content-Type": "application/json", **(headers or {})}
+    if SESSION_TOKEN:
+        request_headers["Authorization"] = f"Bearer {SESSION_TOKEN}"
     query = Request(base + path, data=body, method=method, headers=request_headers)
     try:
         with urlopen(query, timeout=3) as response:
@@ -104,6 +124,7 @@ def main() -> None:
     if args.timeout <= 0 or (args.reset and args.verify_report):
         parser.error("timeout должен быть положительным; reset нельзя сочетать с verify-report")
     base = args.base_url.rstrip("/")
+    authenticate(base)
     cases_path = Path(__file__).resolve().parents[2] / "docs" / "scoring_cases.json"
     cases = json.loads(cases_path.read_text(encoding="utf-8"))["profiles"][:3]
     status, health = request(base, "/health")

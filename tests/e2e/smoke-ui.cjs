@@ -1,3 +1,4 @@
+const { signIn } = require('./auth-helpers.cjs');
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -23,11 +24,12 @@ async function main() {
   const results = [];
   try {
     for (const test of cases) {
-      const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+      const context = await browser.newContext({ viewport: { width: 1440, height: 1000 },
+        ...(process.env.RECORD_DEMO === '1' ? { recordVideo: { dir: path.join(artifacts, 'video') } } : {}) });
       const page = await context.newPage();
       page.on('pageerror', error => errors.push(error.message));
       try {
-        await page.goto(base);
+        await signIn(page, context, base);
         await page.getByRole('radio', { name: new RegExp(test.name) }).click();
         await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
         await page.getByRole('heading', { name: 'Сумма и срок', exact: true }).waitFor();
@@ -79,12 +81,13 @@ async function main() {
         throw error;
       } finally {
         await context.close();
+        if (page.video()) await page.video().saveAs(path.join(artifacts, `demo-${test.outcome.toLowerCase()}.webm`));
       }
     }
     assert.deepEqual(errors, []);
     const context = await browser.newContext();
     const page = await context.newPage();
-    await page.goto(base);
+    await signIn(page, context, base);
     const [reset] = await Promise.all([
       page.waitForResponse(r => r.url().endsWith('/api/demo/reset') && r.request().method() === 'POST'),
       page.getByRole('button', { name: 'Сбросить демо', exact: true }).click(),

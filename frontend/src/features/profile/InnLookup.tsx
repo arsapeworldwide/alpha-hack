@@ -5,11 +5,14 @@ import { Button } from '../../components/ui/Button';
 import { TextField } from '../../components/ui/Field';
 import { digitsOnly } from '../../lib/format';
 import { useStore } from '../../state/context';
+import { useAuth } from '../auth/context';
+import { USE_MOCK } from '../../api/client';
 
 type Result = { kind: 'not-found' } | { kind: 'error'; message: string } | null;
 
 /** Принимаем только компании, найденные в демо-реестре. */
 export function InnLookup() {
+  const { user } = useAuth();
   const { api, dispatch } = useStore();
   const [inn, setInn] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,7 +28,9 @@ export function InnLookup() {
     setLoading(true);
     setResult(null);
     try {
-      dispatch({ type: 'SET_COMPANY', company: await api.lookupCompany(inn) });
+      const company = await api.lookupCompany(inn);
+      if (!USE_MOCK && !user.company_inns.includes(company.inn)) throw new Error('Эта компания недоступна вашей учётной записи.');
+      dispatch({ type: 'SET_COMPANY', company });
     } catch (err) {
       if (err instanceof ApiError && err.code === 'COMPANY_NOT_FOUND') {
         dispatch({ type: 'SET_COMPANY', company: null });

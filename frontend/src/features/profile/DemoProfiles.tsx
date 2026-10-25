@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import type { DemoProfile, Segment } from '../../api/types';
 import { formatRubShort, initials } from '../../lib/format';
 import { useStore } from '../../state/context';
+import { useAuth } from '../auth/context';
+import { USE_MOCK } from '../../api/client';
 import { riskLevel, type RiskLevel } from './riskLevel';
 
 const RISK: Record<RiskLevel, { text: string; color: string }> = {
@@ -15,6 +17,7 @@ const SEGMENT_SHORT: Record<Segment, string> = { retail: 'Ритейл', service
 
 /** Демо-компании одним списком: один клик — и данные заполнены. */
 export function DemoProfiles() {
+  const { user } = useAuth();
   const { api, state, dispatch } = useStore();
   const [profiles, setProfiles] = useState<DemoProfile[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +31,7 @@ export function DemoProfiles() {
   return (
     <div>
     <div role="radiogroup" aria-label="Демо-компании" className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
-      {(profiles ?? [null, null, null]).map((p, i) => {
+      {(profiles?.filter(p => USE_MOCK || user.company_inns.includes(p.company.inn)) ?? [null, null, null]).map((p, i) => {
         if (!p) return <div key={i} className="h-[76px] animate-pulse bg-surface/60" />;
         const selected = state.profileId === p.id;
         const company = p.company;
