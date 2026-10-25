@@ -14,11 +14,17 @@ async function main() {
     await page.goto(base);
     const profile = page.getByRole('radio', { name: /Альфа Ритейл/ });
     await profile.click();
-    await page.getByRole('button', { name: 'Изменить', exact: true }).click();
-    await page.getByLabel('Выручка за год', { exact: true }).fill('900');
-    assert((await profile.innerText()).includes('Высокий риск'));
-    assert((await profile.innerText()).includes('изменено'));
-    await page.getByRole('button', { name: 'Вернуть исходные данные', exact: true }).click();
+    assert.equal(await page.getByRole('button', { name: 'Изменить', exact: true }).count(), 0);
+    assert.equal(await page.getByRole('textbox').count(), 1);
+    await page.getByLabel('ИНН компании или ИП').fill('7700000000');
+    await page.getByRole('button', { name: 'Найти', exact: true }).click();
+    await page.getByText('В демо-реестре не нашли. Проверьте ИНН или выберите демо-компанию.').waitFor();
+    assert(await page.getByRole('button', { name: 'Продолжить', exact: true }).isDisabled());
+    assert.equal(await page.getByRole('textbox').count(), 1);
+    await page.getByLabel('ИНН компании или ИП').fill('7734567890');
+    await page.getByRole('button', { name: 'Найти', exact: true }).click();
+    await page.getByRole('heading', { name: 'ООО «Северный Цех»', exact: true }).waitFor();
+    await profile.click();
     assert((await profile.innerText()).includes('Надёжный'));
     await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
     await page.getByRole('button', { name: 'Назад к компании', exact: true }).click();
@@ -49,7 +55,7 @@ async function main() {
     const history = await (await context.request.get(`${base}/api/applications`)).json();
     for (const { app } of [first, second, third]) assert(history.some(item => item.id === app.id));
     assert.deepEqual(errors, []);
-    console.log('UI OK: edited risk, restore, back navigation, new idempotency keys and preserved history');
+    console.log('UI OK: read-only company, registry lookup, back navigation, new keys and preserved history');
   } finally {
     await context.close();
     await browser.close();

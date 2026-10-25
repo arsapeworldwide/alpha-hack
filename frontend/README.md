@@ -28,7 +28,7 @@ VITE_USE_MOCK=false docker compose up --build
 cd frontend
 npm ci
 npm run dev        # http://localhost:5173
-npm test           # 60 тестов
+npm test           # 63 теста
 npm run lint
 npm run build
 ```

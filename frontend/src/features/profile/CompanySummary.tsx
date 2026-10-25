@@ -1,19 +1,11 @@
-import { useState } from 'react';
 import { CREDIT_HISTORY_LABELS, SEGMENT_NAMES } from '../../api/labels';
 import type { Company } from '../../api/types';
-import { validateCompany } from '../../api/validation';
-import { Button } from '../../components/ui/Button';
 import { formatRub } from '../../lib/format';
-import { CompanyForm } from './CompanyForm';
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1);
 
-/** Краткая сводка о компании. Полная форма открывается по «Изменить» или сама, если данных не хватает. */
+/** Показатели приходят из реестра и доступны только для просмотра. */
 export function CompanySummary({ company }: { company: Company }) {
-  const [editing, setEditing] = useState(false);
-  const error = validateCompany(company);
-  const showForm = editing || error !== null;
-
   const facts = [
     ['Выручка за год', formatRub(company.annual_revenue)],
     ['Платежи по кредитам', `${formatRub(company.monthly_payments)} в мес.`],
@@ -27,13 +19,7 @@ export function CompanySummary({ company }: { company: Company }) {
     <section className="mt-12">
       <div className="mb-5 flex items-baseline justify-between gap-4">
         <h2 className="text-xl font-bold tracking-[-0.01em]">{company.name || 'Новая компания'}</h2>
-        {!error && (
-          <Button variant="link" onClick={() => setEditing((v) => !v)}>{editing ? 'Готово' : 'Изменить'}</Button>
-        )}
       </div>
-      {showForm ? (
-        <CompanyForm company={company} error={error} />
-      ) : (
         <dl className="grid grid-cols-2 gap-x-8 gap-y-5 md:grid-cols-3">
           {facts.map(([label, value]) => (
             <div key={label}>
@@ -42,7 +28,7 @@ export function CompanySummary({ company }: { company: Company }) {
             </div>
           ))}
         </dl>
-      )}
+      <p className="mt-4 text-sm text-muted">Данные из демо-реестра. Изменить показатели компании вручную нельзя.</p>
     </section>
   );
 }

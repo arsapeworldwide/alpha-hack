@@ -3,7 +3,8 @@
 import type { KeyValueStorage } from '../api/mock/mockDb';
 import { initialState, type AppState, type Step } from './reducer';
 
-export const UI_KEY = 'credit-cabinet:ui:v1';
+// Старые черновики могли содержать вручную изменённые показатели компании.
+export const UI_KEY = 'credit-cabinet:ui:v2';
 
 type Saved = Pick<AppState, 'step' | 'profileId' | 'company' | 'form' | 'applicationId'>;
 

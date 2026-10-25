@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { DemoProfile, Segment } from '../../api/types';
 import { formatRubShort, initials } from '../../lib/format';
 import { useStore } from '../../state/context';
-import { riskLevel, sameCompany, type RiskLevel } from './riskLevel';
+import { riskLevel, type RiskLevel } from './riskLevel';
 
 const RISK: Record<RiskLevel, { text: string; color: string }> = {
   ideal: { text: 'Надёжный', color: 'text-success' },
@@ -25,17 +25,13 @@ export function DemoProfiles() {
 
   if (error) return <p className="text-accent-dark">Не удалось загрузить демо-компании: {error}</p>;
 
-  const editedProfile = profiles?.find((p) => p.id === state.profileId && state.company && !sameCompany(state.company, p.company));
-
   return (
     <div>
     <div role="radiogroup" aria-label="Демо-компании" className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
       {(profiles ?? [null, null, null]).map((p, i) => {
         if (!p) return <div key={i} className="h-[76px] animate-pulse bg-surface/60" />;
         const selected = state.profileId === p.id;
-        // У выбранной компании показываем текущие (возможно, изменённые) данные
-        const company = selected && state.company ? state.company : p.company;
-        const edited = selected && state.company !== null && !sameCompany(state.company, p.company);
+        const company = p.company;
         const risk = RISK[riskLevel(company)];
         return (
           <button
@@ -54,7 +50,6 @@ export function DemoProfiles() {
             <span className="min-w-0 flex-1">
               <span className="block truncate font-semibold">
                 {company.name || p.company.name}
-                {edited && <span className="ml-2 text-sm font-normal text-muted">изменено</span>}
               </span>
               <span className="block text-sm text-muted">{SEGMENT_SHORT[company.segment]}, выручка {formatRubShort(company.annual_revenue)} в год</span>
             </span>
@@ -66,14 +61,6 @@ export function DemoProfiles() {
         );
       })}
     </div>
-    {editedProfile && (
-      <p className="mt-3 flex flex-wrap items-baseline gap-x-3 text-sm text-muted">
-        Данные изменены вручную — прогноз и решение считаются по ним.
-        <button type="button" onClick={() => dispatch({ type: 'SELECT_PROFILE', profile: editedProfile })} className="font-medium text-ink underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ink">
-          Вернуть исходные данные
-        </button>
-      </p>
-    )}
     </div>
   );
 }

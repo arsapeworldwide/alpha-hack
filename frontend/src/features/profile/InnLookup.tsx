@@ -8,7 +8,7 @@ import { useStore } from '../../state/context';
 
 type Result = { kind: 'not-found' } | { kind: 'error'; message: string } | null;
 
-/** Поиск по ИНН в «ЕГРЮЛ» (симулятор). Не нашли — открываем пустую карточку для ручного заполнения. */
+/** Принимаем только компании, найденные в демо-реестре. */
 export function InnLookup() {
   const { api, dispatch } = useStore();
   const [inn, setInn] = useState('');
@@ -28,10 +28,7 @@ export function InnLookup() {
       dispatch({ type: 'SET_COMPANY', company: await api.lookupCompany(inn) });
     } catch (err) {
       if (err instanceof ApiError && err.code === 'COMPANY_NOT_FOUND') {
-        dispatch({
-          type: 'SET_COMPANY',
-          company: { inn, name: '', annual_revenue: 0, monthly_payments: 0, credit_history: 'fair', business_age_years: 0, segment: 'services' },
-        });
+        dispatch({ type: 'SET_COMPANY', company: null });
         setResult({ kind: 'not-found' });
       } else {
         setResult({ kind: 'error', message: err instanceof Error ? err.message : 'Поиск не удался. Попробуйте ещё раз.' });
@@ -52,7 +49,7 @@ export function InnLookup() {
           value={inn}
           onChange={(e) => setInn(digitsOnly(e.target.value))}
           error={result?.kind === 'error' ? result.message : null}
-          hint={result?.kind === 'not-found' ? 'В реестре не нашли — заполните данные ниже' : 'Например, 7734567890'}
+          hint={result?.kind === 'not-found' ? 'В демо-реестре не нашли. Проверьте ИНН или выберите демо-компанию.' : 'Например, 7734567890'}
         />
       </div>
       <Button type="submit" variant="secondary" loading={loading} className="h-16 rounded-2xl px-6">Найти</Button>
