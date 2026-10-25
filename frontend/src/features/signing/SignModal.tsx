@@ -6,6 +6,16 @@ import { Modal } from '../../components/ui/Modal';
 import { digitsOnly } from '../../lib/format';
 import { useStore } from '../../state/context';
 
+/** Текст ошибки: если сервер не написал остаток попыток, добавляем его из details.attempts_left. */
+function signErrorText(err: unknown): string {
+  if (!(err instanceof Error)) return 'Не удалось подписать. Попробуйте ещё раз.';
+  const left = err instanceof ApiError ? err.details.attempts_left : undefined;
+  if (err instanceof ApiError && err.code === 'INVALID_SIGN_CODE' && typeof left === 'number' && !/попыт/i.test(err.message)) {
+    return `${err.message.replace(/\.?$/, '.')} Осталось попыток: ${left}.`;
+  }
+  return err.message;
+}
+
 /**
  * Подписание договора кодом. SMS условия кейса запрещают, поэтому демо-код показан прямо в окне.
  * После 5 неверных попыток сервер блокирует подписание (429).
@@ -29,7 +39,7 @@ export function SignModal({ open, onClose }: { open: boolean; onClose: () => voi
       setCode('');
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось подписать. Попробуйте ещё раз.');
+      setError(signErrorText(err));
       if (err instanceof ApiError && err.code === 'TOO_MANY_ATTEMPTS') setBlocked(true);
       setCode('');
     } finally {

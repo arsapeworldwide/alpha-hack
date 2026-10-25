@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import type { FeedItem, FeedResponse, Segment } from '../../api/types';
+import type { FeedItem, FeedResponse, FeedSegment } from '../../api/types';
 import { useStore } from '../../state/context';
 import { feedQuery } from '../../state/reducer';
 import { FeedArticle } from './FeedArticle';
 import { iconForTag, REJECTED_PALETTE, SEGMENT_PALETTE } from './feedStyle';
 
-const TABS: Segment[] = ['retail', 'services', 'production'];
-const TAB_LABELS: Record<Segment, string> = { retail: 'Ритейл', services: 'Услуги', production: 'Производство' };
+// «Для всех» — общие материалы, пока компания не выбрана; дальше лента сама переключается на сегмент компании
+const TABS: FeedSegment[] = ['general', 'retail', 'services', 'production'];
+const TAB_LABELS: Record<FeedSegment, string> = { general: 'Для всех', retail: 'Ритейл', services: 'Услуги', production: 'Производство' };
 
 /**
  * «Умная лента» в журнальной вёрстке: одна главная статья и список остальных.
@@ -16,7 +17,7 @@ const TAB_LABELS: Record<Segment, string> = { retail: 'Ритейл', services: 
 export function FeedPanel() {
   const { api, state } = useStore();
   const auto = feedQuery(state);
-  const [manual, setManual] = useState<Segment | null>(null);
+  const [manual, setManual] = useState<FeedSegment | null>(null);
   const segment = manual ?? auto.segment;
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,14 +45,14 @@ export function FeedPanel() {
     <section aria-labelledby="feed-title">
       <div className="flex flex-col gap-4 border-b border-line md:flex-row md:items-end md:justify-between">
         <h2 id="feed-title" className="pb-4 text-[28px] font-bold leading-tight tracking-[-0.02em]">Полезное для бизнеса</h2>
-        <div className="-mb-px flex gap-6" role="group" aria-label="Раздел ленты">
+        <div className="-mb-px flex gap-5 overflow-x-auto md:gap-6" role="group" aria-label="Раздел ленты">
           {TABS.map((tab) => (
             <button
               key={tab}
               type="button"
               aria-pressed={segment === tab}
               onClick={() => setManual(tab)}
-              className={`border-b-2 pb-4 text-[15px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ink ${
+              className={`shrink-0 whitespace-nowrap border-b-2 pb-4 text-[15px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ink ${
                 segment === tab ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
               }`}
             >

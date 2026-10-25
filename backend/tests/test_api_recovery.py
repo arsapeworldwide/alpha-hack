@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
 from app.db.models import Application, ApplicationEvent, Company, FeedArticle, ScoringFactor
+from app.db.seed_data import FEED_ARTICLES
 from app.main import create_app
 from app.services.pipeline_steps import advance_pipeline
 
@@ -86,7 +87,10 @@ def test_reset_cancels_inflight_tasks_and_preserves_seed(tmp_path):
             for model in (Application, ApplicationEvent, ScoringFactor):
                 assert session.scalar(select(func.count()).select_from(model)) == 0
             assert session.scalar(select(func.count()).select_from(Company)) == 5
-            assert session.scalar(select(func.count()).select_from(FeedArticle)) == 16
+            total = sum(
+                len(a) + len(FEED_ARTICLES["advice"]) for a in FEED_ARTICLES["segments"].values()
+            )
+            assert session.scalar(select(func.count()).select_from(FeedArticle)) == total
     with TestClient(create_app(make_settings(tmp_path))) as client:
         assert client.get("/api/applications").json() == []
 
