@@ -52,6 +52,10 @@ function toErrorBody(data: unknown, status: number): ErrorBody {
     const d = data as Partial<ErrorBody>;
     return { code: d.code ?? 'INTERNAL_ERROR', message: String(d.message), details: d.details ?? {} };
   }
+  if (status >= 502 && status <= 504) {
+    // Ответ не от бэкенда, а от nginx: бэкенд не запущен или не отвечает
+    return { code: 'NETWORK_ERROR', message: 'Сервер банка недоступен. Проверьте, что бэкенд запущен, и обновите страницу.', details: { status } };
+  }
   return {
     code: status === 404 ? 'NOT_FOUND' : status === 422 ? 'VALIDATION_ERROR' : 'INTERNAL_ERROR',
     message: 'Что-то пошло не так на сервере. Попробуйте ещё раз.',

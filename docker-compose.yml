@@ -1,0 +1,36 @@
+# Запуск всего проекта одной командой:  docker compose up --build
+# Сайт: http://localhost:8080
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # true — фронтенд работает без бэкенда (данные в браузере); false — ходит в /api бэкенда
+        VITE_USE_MOCK: ${VITE_USE_MOCK:-true}
+        VITE_API_BASE_URL: /api
+        VITE_MOCK_BKI_FAILURE: ${VITE_MOCK_BKI_FAILURE:-false}
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    # Когда бэкенд готов, раскомментируйте depends_on вместе с сервисом backend ниже
+    # depends_on:
+    #   backend:
+    #     condition: service_healthy
+
+  # Сервис бэкенда добавляет бэкенд-разработчик (FastAPI, порт 8000, маршруты под /api).
+  # После раскомментирования запускайте фронтенд в режиме API:  VITE_USE_MOCK=false docker compose up --build
+  # backend:
+  #   build: ./backend
+  #   env_file: .env
+  #   volumes:
+  #     - backend-data:/data
+  #   healthcheck:
+  #     test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 5
+  #   restart: unless-stopped
+
+# volumes:
+#   backend-data:
