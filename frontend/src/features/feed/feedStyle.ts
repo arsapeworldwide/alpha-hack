@@ -18,7 +18,7 @@ export const SEGMENT_PALETTE: Record<FeedSegment, Palette> = {
   retail: { bg: '#FFF1E8', fg: '#C2410C' },
   services: { bg: '#EBF2FF', fg: '#1D5FC7' },
   production: { bg: '#E7F5EC', fg: '#13792A' },
-  general: { bg: '#F3F4F5', fg: '#0B1F35' },
+  general: { bg: '#FDECEA', fg: '#D4291D' },
 };
 
 /** После отказа советы выделены жёлтым — как предупреждение, а не как реклама. */

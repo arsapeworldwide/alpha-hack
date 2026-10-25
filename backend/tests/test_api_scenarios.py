@@ -116,11 +116,22 @@ def test_feed_segments_and_rejected_priority(client, segment):
     assert response["segment"] == segment
     assert response["reason"]
     articles = response["items"]
-    assert len(articles) == 4
+    assert len(articles) == (4 if segment == "general" else 5)
     assert all(a["synthetic"] for a in articles)
     assert all(a["body"] and a["summary"] and a["read_minutes"] > 0 for a in articles)
-    prioritized = client.get(f"/api/feed?segment={segment}&context=rejected").json()["items"]
-    assert [a["tag"] for a in prioritized[:2]] == ["Долговая нагрузка", "Кредитная история"]
+    # В обычной ленте нет советов после отказа, а статьи у сегментов разные
+    assert all(a["tag"] != "Повысить шансы" for a in articles)
+    others = {
+        a["title"]
+        for s in ("retail", "services", "production", "general")
+        if s != segment
+        for a in client.get(f"/api/feed?segment={s}").json()["items"]
+    }
+    assert not {a["title"] for a in articles} & others
+    prioritized = client.get(f"/api/feed?segment={segment}&context=rejected").json()
+    assert len(prioritized["items"]) == 5
+    assert [a["tag"] for a in prioritized["items"][:3]] == ["Повысить шансы"] * 3
+    assert "долговую нагрузку" in prioritized["items"][0]["title"]
 
 
 def test_lookup_and_health(client):

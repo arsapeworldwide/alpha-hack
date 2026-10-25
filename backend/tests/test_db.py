@@ -6,9 +6,14 @@ from sqlalchemy.orm.exc import StaleDataError
 
 from app.db.models import Application, ApplicationEvent, Company, FeedArticle, ScoringFactor
 from app.db.seed import seed_database
+from app.db.seed_data import FEED_ARTICLES
 from app.db.session import build_engine, build_session_factory, initialize_database
 from app.domain.state_machine import Actor, Status
 from app.domain.types import Goal
+
+TOTAL_ARTICLES = sum(
+    len(a) + len(FEED_ARTICLES["advice"]) for a in FEED_ARTICLES["segments"].values()
+)
 
 
 @pytest.fixture
@@ -44,7 +49,8 @@ def test_seed_is_idempotent_and_does_not_overwrite(database):
         for segment in ("retail", "services", "production", "general"):
             articles = session.scalars(select(FeedArticle).where(FeedArticle.segment == segment))
             articles = list(articles)
-            assert len(articles) == 4
+            expected = len(FEED_ARTICLES["segments"][segment]) + len(FEED_ARTICLES["advice"])
+            assert len(articles) == expected
             assert all(a.synthetic and "Синтетический" in a.full_text for a in articles)
 
 
@@ -120,7 +126,7 @@ def test_delete_applications_cascades_and_preserves_seed(database):
         assert session.scalar(select(func.count()).select_from(ApplicationEvent)) == 0
         assert session.scalar(select(func.count()).select_from(ScoringFactor)) == 0
         assert session.scalar(select(func.count()).select_from(Company)) == 5
-        assert session.scalar(select(func.count()).select_from(FeedArticle)) == 16
+        assert session.scalar(select(func.count()).select_from(FeedArticle)) == TOTAL_ARTICLES
 
 
 def test_idempotency_keys_are_unique(database):

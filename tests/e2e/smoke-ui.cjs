@@ -63,6 +63,7 @@ async function main() {
             await dialog.getByRole('button', { name: 'Подписать договор', exact: true }).click();
             await dialog.getByRole('alert').waitFor();
             assert((await dialog.getByRole('alert').innerText()).includes('Неверный код'));
+            assert((await dialog.getByRole('alert').innerText()).includes('Осталось попыток: 4'));
           }
           await dialog.getByLabel('Код', { exact: true }).fill('1234');
           await dialog.getByRole('button', { name: 'Подписать договор', exact: true }).click();

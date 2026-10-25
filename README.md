@@ -18,6 +18,7 @@ Docker-сборка, запуск, healthcheck и сохранение данн�
 - [Бриф](docs/BACKEND_BRIEF.md)
 - [Правила скоринга](docs/SCORING_SPEC.md)
 - [План и допущения](docs/BACKEND_PLAN.md)
+- [Отфильтрованный список следующих изменений](docs/CHANGES_PRIORITIZED.md)
 - [API, экспортированный из FastAPI](docs/openapi.yaml)
 - [Состояние контракта](docs/API_CONTRACT.md)
 - [Уточнения API](docs/CONTRACT_CHANGES.md)
@@ -68,6 +69,6 @@ API и банковская роль дополнительно проверен
 GET /api/bank/applications. Для решения сотрудника используйте action/comment
 в POST /api/bank/applications/{id}/decision. Настройка — BANK_API_TOKEN через env.
 
-Проверки: 195 тестов Python, 63 теста фронтенда, ruff, ESLint и production build.
+Проверки: 196 тестов Python, 63 теста фронтенда, ruff, ESLint и production build.
 В tests/e2e находятся браузерные проверки Playwright; инструкции — в README этого каталога.
 Изменения контракта и согласованное округление: [CONTRACT_CHANGES](docs/CONTRACT_CHANGES.md).
