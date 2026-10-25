@@ -1,18 +1,24 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/inter';
 
-/* Цвета и шрифт проекта (FRONTEND_BRIEF, раздел «Дизайн»). Используются как bg-accent, text-ink и т. д. */
+/*
+  Визуальный язык — как у современных банковских сайтов для бизнеса: белая страница,
+  серые плашки без теней, поля с серой заливкой, крупные жирные заголовки, один красный акцент.
+  Токены используются как bg-surface, text-ink, text-muted и т. д.
+*/
 @theme {
   --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --color-page: #f2f3f5;
+  --color-page: #ffffff;
+  --color-surface: #f3f4f5;
+  --color-surface-hover: #e9ebee;
   --color-ink: #0b1f35;
-  --color-muted: #5b6b7d;
-  --color-line: #e3e6ea;
+  --color-muted: #6d7986;
+  --color-line: #dcdfe3;
   --color-accent: #ef3124;
-  --color-accent-dark: #c9251a;
+  --color-accent-dark: #d4291d;
   --color-success: #21a038;
   --color-warning: #f5a623;
-  --color-info: #2f6fde;
+  --color-info: #2a77ef;
 }
 
 @layer base {
@@ -20,7 +26,71 @@
     background-color: var(--color-page);
     color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'cv11', 'ss01';
   }
+}
+
+/* Слайдер, прижатый к нижнему краю поля суммы/срока. --fill задаёт компонент SliderField */
+/* Ширину не задаём: этот CSS вне слоёв Tailwind и перебил бы классы ширины у компонента */
+.range {
+  appearance: none;
+  display: block;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+.range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(to right, var(--color-accent) var(--fill), transparent var(--fill));
+}
+.range::-moz-range-track {
+  height: 2px;
+  background: transparent;
+}
+.range::-moz-range-progress {
+  height: 2px;
+  background: var(--color-accent);
+}
+.range::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -9px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(11, 31, 53, 0.25);
+}
+.range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(11, 31, 53, 0.25);
+}
+.range:focus-visible {
+  outline: none;
+}
+.range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(239, 49, 36, 0.25);
+}
+
+/* Смена материалов ленты: короткое проявление, чтобы было видно, что лента подстроилась */
+@keyframes feed-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.feed-in {
+  animation: feed-in 0.35s ease-out both;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+dialog.modal[open] {
+  animation: modal-in 0.2s ease-out;
 }
 
 /* Уважаем настройку «уменьшить движение» в системе пользователя */

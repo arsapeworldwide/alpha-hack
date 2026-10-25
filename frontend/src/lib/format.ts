@@ -52,6 +52,12 @@ export function formatDate(isoDate: string): string {
   return `${d} ${months[m - 1]} ${y}`;
 }
 
+/** Инициалы для аватара: «ООО «Альфа Ритейл»» → «АР», «ИП Иванов» → «ИИ». */
+export function initials(name: string): string {
+  const words = name.replace(/[«»"]/g, '').split(/\s+/).filter((w) => w && !['ООО', 'АО', 'ПАО', 'ЗАО'].includes(w));
+  return words.slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '—';
+}
+
 /** Убирает всё, кроме цифр (для полей ИНН и сумм). */
 export function digitsOnly(value: string): string {
   return value.replace(/\D/g, '');

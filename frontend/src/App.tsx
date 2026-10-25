@@ -1,73 +1,86 @@
-// Каркас приложения (Фаза 1): шапка, место под шаги и ленту, футер.
-// Экраны шагов появятся в Фазах 2–3; сейчас показываем, что API-слой и скоринг работают.
+// Каркас страницы: демо-полоса, шапка с выбранной компанией, шаг слева, карточка «Ваша заявка» справа,
+// «Умная лента» ниже.
 
-import { useEffect, useState } from 'react';
-import { RotateCcw } from 'lucide-react';
-import { USE_MOCK } from './api/client';
-import { evaluate } from './api/scoring';
-import type { DemoProfile } from './api/types';
-import { formatPercent, formatRub } from './lib/format';
+import { useState } from 'react';
+import { CalculatorStep } from './features/calculator/CalculatorStep';
+import { ApplicationCard } from './features/application/ApplicationCard';
+import { FeedPanel } from './features/feed/FeedPanel';
+import { PendingStep } from './features/pipeline/PendingStep';
+import { ProfileStep } from './features/profile/ProfileStep';
+import { initials } from './lib/format';
 import { useStore } from './state/context';
 
+/** Служебная полоса демо-режима: честно говорит, что данные синтетические, и даёт сброс. */
+function DemoBar() {
+  const { resetDemo } = useStore();
+  const [resetting, setResetting] = useState(false);
+  return (
+    <div className="bg-ink text-white">
+      <div className="mx-auto flex h-9 max-w-6xl items-center justify-between gap-4 px-4 text-[13px]">
+        <span className="truncate text-white/80">Демо-режим: данные синтетические, интеграции смоделированы</span>
+        <button
+          type="button"
+          disabled={resetting}
+          onClick={() => {
+            setResetting(true);
+            void resetDemo().finally(() => setResetting(false));
+          }}
+          className="shrink-0 font-medium text-white underline-offset-4 hover:underline disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-white"
+        >
+          {resetting ? 'Сбрасываем…' : 'Сбросить демо'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Выбранная компания в шапке — как переключатель аккаунта в интернет-банке. */
+function CompanyChip() {
+  const { state } = useStore();
+  const { company } = state;
+  if (!company?.name) return null;
+  return (
+    <div className="flex items-center gap-3">
+      <span className="hidden text-right sm:block">
+        <span className="block text-sm font-semibold leading-tight">{company.name}</span>
+        <span className="block text-[13px] text-muted">ИНН {company.inn}</span>
+      </span>
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-sm font-bold" aria-hidden>{initials(company.name)}</span>
+    </div>
+  );
+}
+
 export default function App() {
-  const { api, state, resetDemo } = useStore();
-  const [profiles, setProfiles] = useState<DemoProfile[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api.getDemoProfiles().then(setProfiles).catch((e: Error) => setError(e.message));
-  }, [api]);
-
-  const today = new Date().toISOString().slice(0, 10);
-
+  const { state } = useStore();
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-line bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2 text-lg font-semibold">
-            <span className="inline-block h-6 w-1.5 rounded-full bg-accent" aria-hidden />
-            Кредитный кабинет
-          </div>
-          <button
-            type="button"
-            onClick={() => void resetDemo()}
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted hover:bg-page hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            <RotateCcw size={16} aria-hidden /> Сбросить демо
-          </button>
+      <DemoBar />
+      <header className="border-b border-line">
+        <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between gap-4 px-4">
+          <span className="text-xl font-bold tracking-[-0.02em]">Кредитный кабинет</span>
+          <CompanyChip />
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
-        <section className="rounded-2xl bg-white p-6 shadow-sm">
-          <h1 className="text-2xl font-semibold">Каркас готов</h1>
-          <p className="mt-1 text-muted">
-            Режим API: {USE_MOCK ? 'мок (данные в браузере)' : 'настоящий бэкенд'} · текущий шаг: {state.step}
-          </p>
-          {error && <p className="mt-4 text-accent">{error}</p>}
-          <ul className="mt-6 grid gap-3 md:grid-cols-3">
-            {profiles.map((p) => {
-              const d = evaluate({ company: p.company, requestedAmount: 10_000_000, termMonths: 36, goal: 'working_capital' }, today);
-              return (
-                <li key={p.id} className="rounded-xl border border-line p-4">
-                  <div className="font-medium">{p.label}</div>
-                  <div className="mt-2 text-sm text-muted tabular-nums">
-                    Балл {d.score} · {d.rate !== null ? formatPercent(d.rate) : 'ставка не определена'}
-                  </div>
-                  <div className="mt-1 text-sm tabular-nums">
-                    {d.outcome === 'REJECTED' ? `Отказ: ${d.rejection_reason}` : `${d.outcome === 'APPROVED' ? 'Одобрено' : 'Встречное'}: ${formatRub(d.approved_amount ?? 0)}`}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-20 pt-12">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start xl:gap-16">
+          <div className="min-w-0">
+            {state.step === 1 && <ProfileStep />}
+            {state.step === 2 && <CalculatorStep />}
+            {state.step >= 3 && <PendingStep />}
+          </div>
+          <div className="lg:sticky lg:top-8">
+            <ApplicationCard />
+          </div>
+        </div>
+
+        <div className="mt-24">
+          <FeedPanel key={state.company?.segment ?? 'general'} />
+        </div>
       </main>
 
-      <footer className="py-6 text-center">
-        <span className="inline-block rounded-full bg-white px-4 py-2 text-xs text-muted shadow-sm">
-          Демо: данные синтетические, интеграции смоделированы
-        </span>
+      <footer className="border-t border-line">
+        <div className="mx-auto max-w-6xl px-4 py-6 text-[13px] text-muted">Прототип для хакатона. Не является офертой.</div>
       </footer>
     </div>
   );
