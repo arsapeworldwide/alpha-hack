@@ -40,8 +40,12 @@ def client(tmp_path):
 
 
 def application_payload(inn: str = "7712345678", **changes) -> dict:
+    from app.db.seed_data import COMPANIES
+
+    company = dict(next((c for c in COMPANIES if c["inn"] == inn), COMPANIES[0]))
+    company["inn"] = inn
     return {
-        "inn": inn,
+        "company": company,
         "requested_amount": 10_000_000,
         "term_months": 36,
         "goal": "working_capital",

@@ -18,12 +18,13 @@ def review(base: str, application_id: str, action: str, headers: dict):
 
 
 def create(base: str, inn: str, expected: str, timeout: float):
+    _, company = request(base, "/companies/lookup?inn=" + inn)
     status, created = request(
         base,
         "/applications",
         "POST",
         {
-            "inn": inn,
+            "company": company,
             "requested_amount": 10_000_000,
             "term_months": 36,
             "goal": "working_capital",
@@ -36,16 +37,20 @@ def create(base: str, inn: str, expected: str, timeout: float):
 def verify(base: str, saved: dict, timeout: float) -> None:
     approved = wait_for(base, saved["approved_id"], "DISBURSED", timeout)
     rejected = wait_for(base, saved["rejected_id"], "REJECTED", timeout)
-    check(approved["score"] == 46 and approved["decision"]["manual"], "Ручное одобрение потеряно")
-    check(approved["decision"]["amount"] == 10_000_000, "Ручная сумма потеряна")
-    check(Decimal(approved["decision"]["annual_rate"]) == 24, "Ручная ставка потеряна")
+    check(
+        approved["decision"]["score"] == 46 and (approved["decision"]["decided_by"] == "bank"),
+        "Ручное одобрение потеряно",
+    )
+    check(approved["decision"]["approved_amount"] == 10_000_000, "Ручная сумма потеряна")
+    check(Decimal(approved["decision"]["rate"]) == 24, "Ручная ставка потеряна")
     check(
         approved["decision"]["monthly_payment"] == 392_329
-        and approved["decision"]["overpayment"] == 4_123_827,
+        and approved["decision"]["overpayment"] == 4_123_844,
         "Ручные платежи потеряны",
     )
     check(
-        rejected["decision"]["manual"] and rejected["decision"]["amount"] is None,
+        (rejected["decision"]["decided_by"] == "bank")
+        and rejected["decision"]["approved_amount"] is None,
         "Ручной отказ потерян",
     )
     for detail in (approved, rejected):
@@ -79,17 +84,18 @@ def main() -> None:
     status, approved = review(base, counter["id"], "approve", headers)
     check(status == 200 and approved["status"] == "APPROVED", "Ручное одобрение не выполнено")
     check(
-        approved["score"] == 46 and approved["factors"] == counter["factors"],
+        approved["decision"]["score"] == 46
+        and approved["decision"]["factors"] == counter["decision"]["factors"],
         "Ручное решение изменило исходный скоринг",
     )
     check(
-        approved["decision"]["amount"] == 10_000_000
-        and Decimal(approved["decision"]["annual_rate"]) == 24,
+        approved["decision"]["approved_amount"] == 10_000_000
+        and Decimal(approved["decision"]["rate"]) == 24,
         "Неверные ручные условия",
     )
     check(
         approved["decision"]["monthly_payment"] == 392_329
-        and approved["decision"]["overpayment"] == 4_123_827,
+        and approved["decision"]["overpayment"] == 4_123_844,
         "Неверный ручной расчёт",
     )
     status, _ = request(base, f"/applications/{counter['id']}/sign", "POST", {"code": "1234"})
@@ -102,7 +108,7 @@ def main() -> None:
     check(status == 200 and rejected["status"] == "REJECTED", "Ручной отказ не выполнен")
     poor = create(base, "7723456789", "REJECTED", args.timeout)
     status, error = review(base, poor["id"], "approve", headers)
-    check(status == 409 and error["code"] == "BANK_RATE_UNAVAILABLE", "Нарушена граница SPEC")
+    check(status == 409 and error["code"] == "INVALID_TRANSITION", "Нарушена граница SPEC")
     saved = {"approved_id": counter["id"], "rejected_id": retail["id"]}
     verify(base, saved, args.timeout)
     if args.report:

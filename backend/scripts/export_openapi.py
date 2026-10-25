@@ -8,7 +8,7 @@ from app.main import create_app
 def main() -> None:
     target = Path(__file__).resolve().parents[2] / "docs" / "openapi.yaml"
     schema = create_app().openapi()
-    header = "# ЧЕРНОВИК бэкенда, сверить с контрактом фронтенда\n"
+    header = "# Экспорт FastAPI; исходный контракт: docs/frontend/openapi.yaml\n"
     target.write_text(
         header + yaml.safe_dump(schema, allow_unicode=True, sort_keys=False),
         encoding="utf-8",

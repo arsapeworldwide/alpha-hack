@@ -35,7 +35,7 @@ def test_concurrent_idempotent_posts_create_one_application(tmp_path):
                     await asyncio.sleep(0.005)
                 assert detail["status"] == "APPROVED"
                 assert len(detail["events"]) == 6
-                assert len(detail["factors"]) == 5
+                assert len(detail["decision"]["factors"]) == 5
                 history = await client.get("/api/applications")
                 assert len(history.json()) == 1
 

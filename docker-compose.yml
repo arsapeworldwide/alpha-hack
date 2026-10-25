@@ -1,4 +1,20 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_USE_MOCK: ${VITE_USE_MOCK:-false}
+        VITE_API_BASE_URL: /api
+        VITE_MOCK_BKI_FAILURE: ${VITE_MOCK_BKI_FAILURE:-false}
+    ports:
+      - "8080:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
   backend:
     build:
       context: ./backend
@@ -35,16 +51,6 @@ services:
       timeout: 3s
       start_period: 10s
       retries: 3
-
-  # Фронтенд-разработчик добавит свой сервис; папки frontend/ пока нет.
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "8080:80"
-  #   depends_on:
-  #     backend:
-  #       condition: service_healthy
-  # В nginx сохранить /api: proxy_pass http://backend:8000; (без завершающего /).
 
 volumes:
   backend_data:

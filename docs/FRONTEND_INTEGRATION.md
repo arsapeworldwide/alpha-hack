@@ -1,8 +1,9 @@
 # Интеграция фронтенда с бэкендом
 
-В текущей рабочей копии frontend/ отсутствует. Корневой compose запускает бэкенд,
-рядом оставлен комментарий для будущего сервиса frontend. Код фронтенда не создавался
-и не изменялся. Проверить клики в интерфейсе сейчас невозможно.
+Фронтенд получен из origin/frontend (0978566), его файлы перенесены без изменений.
+Корневой compose запускает frontend и backend. По умолчанию VITE_USE_MOCK=false:
+браузер обращается к реальному API через nginx. Сайт — http://localhost:8080.
+Исходный контракт и документы сохранены в docs/frontend/, API адаптирован на сервере.
 
 При добавлении frontend оба сервиса должны оставаться в одной compose-сети.
 Зависимость от бэкенда желательно описать с condition: service_healthy.
@@ -48,7 +49,8 @@ docker compose -f docker-compose.yml -f docker-compose.integration.yml --profile
 Проверка: http://localhost:18080/api/health, Swagger: http://localhost:18080/api/docs.
 Порт меняется через INTEGRATION_PROXY_PORT. Образ официального nginx 1.30.6
 зафиксирован по digest; первичная загрузка требует интернета.
-Основной запуск `docker compose up --build` включает только backend.
+Основной запуск `docker compose up --build` включает frontend и backend;
+тестовый integration_proxy запускается только явно через дополнительный профиль.
 
 Из backend/ можно прогнать оба HTTP-сценария через прокси:
 
@@ -65,12 +67,12 @@ docker compose -f docker-compose.yml -f docker-compose.integration.yml --profile
 docker compose -f docker-compose.yml -f docker-compose.integration.yml --profile integration rm -f integration_proxy
 ```
 
-Фактическая интеграция будущего фронтенда всё равно требует проверки его nginx,
-форм и обработки состояний. Тестовый прокси проверяет работу опубликованного API.
+Фактические формы и nginx frontend уже проверены на реальном API. Дополнительный
+тестовый прокси оставлен для независимой проверки опубликованных маршрутов.
 
 ## Что передать фронтенд-разработчику
 
-- openapi.yaml — полная схема 12 операций; пока помечена черновиком бэкенда.
+- openapi.yaml — экспорт полной схемы 13 операций; исходный контракт — docs/frontend/openapi.yaml.
 - API_CONTRACT.md и CONTRACT_CHANGES.md — поля, ошибки и согласованные допущения.
 - scoring_cases.json — общие эталонные числа для моков.
 - APPLICATION_STATES.md — переходы и условия подписания.
@@ -81,13 +83,14 @@ APPROVED можно подписать сразу; COUNTER_OFFER сначала 
 После SIGNED нужно дождаться DISBURSED. NEEDS_RECHECK показывает message без причины отказа.
 Ошибки читаются как {code, message, details}; 409 требует обновить состояние заявки,
 429 означает исчерпание пяти неверных попыток подписи.
-Банковское решение с manual=true сохраняет исходный score и факторы; комментарий виден клиенту.
+Банковское решение с decision.decided_by=bank сохраняет исходный score и факторы; комментарий виден клиенту.
 Для банковского демо токен вводит тестировщик: не помещать свой BANK_API_TOKEN в публичную сборку.
 
-Для завершения общей проверки нужны исходники frontend/ с package.json, инструкцией
-сборки и реальным nginx-конфигом либо репозиторий/ветка, откуда их можно взять.
-Если у фронтенда уже есть свой контракт, он должен быть предоставлен для сверки;
-при расхождениях изменения фиксируются до интеграции.
+Исходники frontend/, package-lock и nginx получены и проверены. Расхождения
+и согласованное округление зафиксированы в FRONTEND_CONTRACT_DIFF.md и CONTRACT_CHANGES.md.
+Через deploy/nginx.conf настроен безопасный формат access-log без query string;
+сам frontend/nginx.conf не изменялся. В hosts не нужно добавлять имя backend:
+оно используется только внутри compose-сети.
 
 Архив исходников для передачи можно создать после коммита, из корня:
 `git archive --format=zip --output=backend-handoff.zip HEAD`.

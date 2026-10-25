@@ -17,7 +17,7 @@ def test_bank_routes_require_token(client, headers):
     )
     for response in (queue, decision):
         assert response.status_code == 401
-        assert response.json()["code"] == "BANK_UNAUTHORIZED"
+        assert response.json()["code"] == "UNAUTHORIZED"
         assert response.headers["x-request-id"]
 
 
@@ -41,10 +41,8 @@ def test_custom_token_replaces_default(tmp_path):
     "changes",
     [
         {"action": "counter"},
-        {"comment": ""},
-        {"comment": "   "},
         {"comment": 123},
-        {"comment": "a" * 1001},
+        {"comment": "a" * 501},
         {"amount": 1000000},
     ],
 )

@@ -1,11 +1,15 @@
 # Умный кредитный кабинет предпринимателя
 
+Фронтенд из origin/frontend и бэкенд объединены в integration/frontend-backend.
+API адаптирован к контракту фронтенда; исходники frontend/ перенесены без правок.
+По умолчанию интерфейс работает с настоящим сервером, а не браузерным мок-сервером.
+
 Прототип для хакатона Альфа-Банка / Changellenge: заявка на кредит,
 объяснимый скоринг, встречное предложение, подписание и выдача.
 
 Реализованы БД, seed, бизнес-логика, API и асинхронный конвейер.
 Docker-сборка, запуск, healthcheck и сохранение данных после перезапуска проверены.
-Банковская роль реализована. Фронтенд пока отсутствует.
+Банковская роль реализована. Три исхода проверены кликами в браузере через nginx.
 Стек бэкенда: Python 3.12, FastAPI, SQLAlchemy, SQLite.
 Код и Dockerfile находятся в backend/. Корневой requirements.txt ссылается
 на backend/requirements.txt с точными версиями и хешами.
@@ -13,7 +17,7 @@ Docker-сборка, запуск, healthcheck и сохранение данн�
 - [Бриф](docs/BACKEND_BRIEF.md)
 - [Правила скоринга](docs/SCORING_SPEC.md)
 - [План и допущения](docs/BACKEND_PLAN.md)
-- [Черновик API](docs/openapi.yaml)
+- [API, экспортированный из FastAPI](docs/openapi.yaml)
 - [Состояние контракта](docs/API_CONTRACT.md)
 - [Уточнения API](docs/CONTRACT_CHANGES.md)
 - [Ограничения и развитие](docs/REVIEW_NOTES.md)
@@ -38,11 +42,13 @@ Docker-сборка, запуск, healthcheck и сохранение данн�
 docker compose up --build
 ```
 
-Swagger: http://localhost:8000/api/docs, проверка: http://localhost:8000/api/health.
+Сайт: http://localhost:8080. Swagger: http://localhost:8080/api/docs
+или http://localhost:8000/api/docs. Проверка: http://localhost:8080/api/health.
 Seed загружается автоматически, `.env` не обязателен: используются безопасные
 значения `.env.example`. SQLite хранится в именованном volume `backend_data`.
 Перезапуск и обычный `docker compose down` сохраняют заявки.
-Сервис frontend добавит фронтенд-разработчик; сейчас запускается только backend.
+Запускаются frontend и backend, оба должны получить healthy. VITE_USE_MOCK=false
+задаётся по умолчанию в compose; VITE-переменные применяются во время сборки.
 
 Проверено на Docker Desktop 4.96.3 / Linux Engine 29.9.2 / Compose 5.6.1:
 контейнер healthy, три сценария дают числа из SPEC, заявки сохраняются после
@@ -50,8 +56,16 @@ Seed загружается автоматически, `.env` не обязат
 Скоринг также проверен в отдельном контейнере с `--network none`.
 API и банковская роль дополнительно проверены через отдельный тестовый nginx;
 команда его запуска — в [инструкции интеграции](docs/FRONTEND_INTEGRATION.md).
+В реальном интерфейсе проверены одобрение, встречное предложение 2 500 000,
+отказ, неверный код, подпись, выдача, перезагрузка, история и сброс.
+Переплата согласована с фронтендом: округляется месячный платёж, затем считается
+итог выплат. Для эталонов — 3 196 160 и 1 030 952 рублей, баллы — 97/46/8.
 Подробная проверка и ограничения: [backend/README.md](backend/README.md).
 
 Банковская роль: в Swagger Authorize введите demo-bank-token, затем откройте
 GET /api/bank/applications. Для решения сотрудника используйте action/comment
 в POST /api/bank/applications/{id}/decision. Настройка — BANK_API_TOKEN через env.
+
+Проверки: 194 теста Python, 60 тестов фронтенда, ruff, ESLint и production build.
+В tests/e2e находятся браузерные проверки Playwright; инструкции — в README этого каталога.
+Изменения контракта и согласованное округление: [CONTRACT_CHANGES](docs/CONTRACT_CHANGES.md).

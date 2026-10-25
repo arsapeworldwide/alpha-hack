@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
 
 from app.db.models import Company, FeedArticle
-from app.db.seed_data import COMMON_ARTICLES, COMPANIES, SEGMENT_TIPS
+from app.db.seed_data import COMMON_ARTICLES, COMPANIES, REGISTRY_EXTRAS, SEGMENT_TIPS
 
 
 def seed_database(session: Session) -> None:
-    for company in COMPANIES:
+    for company in (*COMPANIES, *REGISTRY_EXTRAS):
         if session.get(Company, company["inn"]) is None:
             session.add(Company(**company))
     for segment, tips in SEGMENT_TIPS.items():

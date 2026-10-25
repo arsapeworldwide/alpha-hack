@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
 from app.db.models import Application, utc_now
-from app.domain.annuity import annuity_payment, round_rubles
+from app.domain.annuity import loan_totals
 from app.domain.decision import three_months_later
 from app.domain.scoring import annual_rate
 from app.domain.state_machine import Actor, Status, check_transition
@@ -67,11 +67,11 @@ def approve_application(application: Application) -> None:
         )
     rate = annual_rate(application.score, application.goal)
     amount = application.requested_amount
-    payment = annuity_payment(amount, rate, application.term_months)
+    payment, _, overpayment = loan_totals(amount, rate, application.term_months)
     application.rate = rate
     application.offered_amount = amount
-    application.monthly_payment = round_rubles(payment)
-    application.overpayment = round_rubles(payment * application.term_months - amount)
+    application.monthly_payment = payment
+    application.overpayment = overpayment
     application.rejection_reason = None
     application.recommendations = []
     application.reapply_date = None

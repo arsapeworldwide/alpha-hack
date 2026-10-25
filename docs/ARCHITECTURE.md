@@ -4,7 +4,7 @@
 flowchart LR
     User[Предприниматель] --> Browser[Браузер]
     Bank[Сотрудник банка] --> Swagger[Swagger /api/docs]
-    Browser --> Frontend[Frontend: пока отсутствует]
+    Browser --> Frontend[React frontend :8080]
     Frontend --> Nginx[nginx: /api без изменения пути]
     Browser -. прямой доступ в демо .-> API[FastAPI /api :8000]
     Swagger --> API
@@ -22,8 +22,9 @@ flowchart LR
     DB --> Events[application_events: system / client / bank]
 ```
 
-Фронтенд и nginx показаны как точки интеграции; их исходников в репозитории нет.
-Сейчас работает доступ к API/Swagger напрямую через localhost:8000.
+Фронтенд перенесён из origin/frontend без правок. Compose запускает оба сервиса;
+localhost:8080 обслуживает интерфейс и /api через nginx, localhost:8000 — прямой API.
+deploy/nginx.conf подключает исходный server-конфиг и убирает query string из access-log.
 Для независимой проверки проксирования есть тестовый nginx на localhost:18080
 через docker-compose.integration.yml; он не заменяет исходники фронтенда.
 FastAPI управляет временем жизни БД и задач. На старте создаётся схема,

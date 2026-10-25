@@ -1,12 +1,11 @@
 from datetime import UTC, date, datetime
-from decimal import Decimal
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.domain.state_machine import Actor, Status
 from app.domain.types import Goal
-from app.schemas.companies import CompanyResponse, Inn
+from app.schemas.companies import CompanyResponse
 
 
 class LoanParameters(BaseModel):
@@ -24,7 +23,7 @@ class LoanParameters(BaseModel):
 
 
 class CreateApplication(LoanParameters):
-    inn: Inn
+    company: CompanyResponse
 
 
 class SignRequest(BaseModel):
@@ -44,9 +43,9 @@ class UtcModel(BaseModel):
 
 
 class PipelineStage(UtcModel):
-    code: Status
-    name: str
-    state: Literal["pending", "active", "completed", "failed"]
+    code: Literal["egrul", "bki", "scoring"]
+    title: str
+    state: Literal["pending", "in_progress", "done", "failed"]
     started_at: datetime | None = None
     finished_at: datetime | None = None
 
@@ -63,39 +62,59 @@ class EventResponse(UtcModel):
 
 
 class FactorResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    code: str
+    code: Literal["credit_history", "debt_load", "revenue", "business_age", "amount_to_revenue"]
     name: str
-    points: Decimal
-    maximum: int
+    points: float
+    max_points: int
     explanation: str
 
 
 class DecisionResponse(BaseModel):
-    status: Status
-    annual_rate: Decimal | None
-    amount: int | None
+    outcome: Literal["APPROVED", "COUNTER_OFFER", "REJECTED"]
+    score: int | None
+    factors: list[FactorResponse]
+    rate: float | None
+    approved_amount: int | None
+    term_months: int
     monthly_payment: int | None
     overpayment: int | None
-    manual: bool
+    total_payment: int | None
+    max_amount: int | None
+    capacity: int
+    debt_ratio: float
+    rejection_reason: str | None
+    recommendations: list[str]
+    reapply_date: date | None
+    decided_by: Literal["system", "bank"]
+    bank_comment: str | None
 
 
 class ApplicationResponse(UtcModel):
     id: str
     status: Status
     status_label: str
-    message: str | None
+    error_message: str | None
     created_at: datetime
     updated_at: datetime
     company: CompanyResponse
-    parameters: LoanParameters
-    stages: list[PipelineStage]
+    requested_amount: int
+    term_months: int
+    goal: Goal
+    goal_label: str
+    pipeline: list[PipelineStage]
     decision: DecisionResponse | None
-    score: int | None
-    factors: list[FactorResponse]
-    rejection_reason: str | None
-    recommendations: list[str]
-    reapply_date: date | None
-    sign_attempts_remaining: int
+    sign_attempts_left: int
+    signed_at: datetime | None
+    disbursed_at: datetime | None
     events: list[EventResponse]
+
+
+class ApplicationSummary(UtcModel):
+    id: str
+    status: Status
+    status_label: str
+    created_at: datetime
+    company_name: str
+    requested_amount: int
+    approved_amount: int | None
+    goal: Goal

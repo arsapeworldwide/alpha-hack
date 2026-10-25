@@ -39,7 +39,7 @@ def test_seed_is_idempotent_and_does_not_overwrite(database):
         session.get(Company, "7712345678").monthly_payments = 123
         session.commit()
         seed_database(session)
-        assert session.scalar(select(func.count()).select_from(Company)) == 3
+        assert session.scalar(select(func.count()).select_from(Company)) == 5
         assert session.get(Company, "7712345678").monthly_payments == 123
         for segment in ("retail", "services", "production", "general"):
             articles = session.scalars(select(FeedArticle).where(FeedArticle.segment == segment))
@@ -119,7 +119,7 @@ def test_delete_applications_cascades_and_preserves_seed(database):
         session.commit()
         assert session.scalar(select(func.count()).select_from(ApplicationEvent)) == 0
         assert session.scalar(select(func.count()).select_from(ScoringFactor)) == 0
-        assert session.scalar(select(func.count()).select_from(Company)) == 3
+        assert session.scalar(select(func.count()).select_from(Company)) == 5
         assert session.scalar(select(func.count()).select_from(FeedArticle)) == 16
 
 

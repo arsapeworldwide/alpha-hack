@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import ROUND_FLOOR, Decimal
 
-from app.domain.annuity import annuity_payment, maximum_amount, round_rubles
+from app.domain.annuity import loan_totals, maximum_amount
 from app.domain.scoring import annual_rate, calculate_score, debt_ratio, payment_capacity
 from app.domain.state_machine import Status
 from app.domain.types import CreditHistory, ScoringInput, ScoringResult
@@ -84,14 +84,14 @@ def make_decision(data: ScoringInput, today: date) -> Decision:
             three_months_later(today),
         )
     assert amount is not None and rate is not None
-    payment = annuity_payment(amount, rate, data.term_months)
+    payment, _, overpayment = loan_totals(amount, rate, data.term_months)
     return Decision(
         status,
         scoring,
         rate,
         amount,
-        round_rubles(payment),
-        round_rubles(payment * data.term_months - amount),
+        payment,
+        overpayment,
         capacity,
         maximum,
     )

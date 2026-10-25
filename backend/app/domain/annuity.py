@@ -32,3 +32,9 @@ def maximum_amount(capacity: Decimal, annual_rate: Decimal, term_months: int) ->
     with localcontext() as context:
         context.prec = 40
         return max(Decimal(0), capacity) * present_value_factor(annual_rate, term_months)
+
+
+def loan_totals(amount: int, annual_rate: Decimal, term_months: int) -> tuple[int, int, int]:
+    payment = round_rubles(annuity_payment(amount, annual_rate, term_months))
+    total = payment * term_months
+    return payment, total, total - amount

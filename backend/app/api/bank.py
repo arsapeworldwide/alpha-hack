@@ -1,5 +1,4 @@
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
@@ -42,7 +41,7 @@ async def bank_queue(
 
 @router.post("/{id}/decision", response_model=ApplicationResponse)
 async def bank_decision(
-    id: UUID,
+    id: str,
     payload: BankDecisionRequest,
     session: DbSession,
     pipeline: PipelineDependency,

@@ -38,21 +38,25 @@ def wait_for(base: str, application_id: str, expected: str, timeout: float):
 def check_decision(detail: dict, case: dict) -> None:
     expected = case["expected"]
     decision = detail["decision"]
-    check(detail["score"] == expected["score"], "Не совпал score")
-    check(decision["status"] == expected["status"], "Не совпало решение")
+    check(detail["decision"]["score"] == expected["score"], "Не совпал score")
+    check(decision["outcome"] == expected["status"], "Не совпало решение")
     for field in ("amount", "monthly_payment", "overpayment"):
-        check(decision[field] == expected[field], f"Не совпало поле {field}")
+        check(
+            decision["approved_amount" if field == "amount" else field] == expected[field],
+            f"Не совпало поле {field}",
+        )
     if expected["rate"] is not None:
-        check(Decimal(decision["annual_rate"]) == Decimal(expected["rate"]), "Не совпала ставка")
+        check(Decimal(decision["rate"]) == Decimal(expected["rate"]), "Не совпала ставка")
     else:
         check(
-            detail["rejection_reason"] == expected["rejection_reason"], "Не совпала причина отказа"
+            detail["decision"]["rejection_reason"] == expected["rejection_reason"],
+            "Не совпала причина отказа",
         )
 
 
 def run_case(base: str, case: dict, timeout: float) -> dict:
     payload = {key: case["input"][key] for key in ("requested_amount", "term_months", "goal")}
-    payload["inn"] = case["inn"]
+    _, payload["company"] = request(base, "/companies/lookup?inn=" + case["inn"])
     headers = {"Idempotency-Key": f"smoke-{uuid4()}"}
     status, created = request(base, "/applications", "POST", payload, headers)
     check(

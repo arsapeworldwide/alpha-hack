@@ -32,9 +32,9 @@ def test_app_startup_creates_seed_and_serves_swagger(tmp_path):
     app = create_app(settings)
     with TestClient(app) as client:
         assert client.get("/api/docs").status_code == 200
-        assert client.get("/api/openapi.json").json()["info"]["version"] == "0.1.0"
+        assert client.get("/api/openapi.json").json()["info"]["version"] == "1.0.0"
         with app.state.session_factory() as session:
-            assert session.scalar(select(func.count()).select_from(Company)) == 3
+            assert session.scalar(select(func.count()).select_from(Company)) == 5
         response = client.options(
             "/api/applications",
             headers={

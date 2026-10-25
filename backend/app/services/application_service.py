@@ -65,11 +65,11 @@ def create_application(
                     "Этот Idempotency-Key уже использован с другими параметрами.",
                 )
             return existing, False
-    company = session.get(Company, payload.inn)
+    company = session.get(Company, payload.company.inn)
     if company is None:
         raise AppError(404, "COMPANY_NOT_FOUND", "В демо-реестре компания не найдена.")
     application = Application(
-        company_inn=payload.inn,
+        company_inn=payload.company.inn,
         company_snapshot=CompanyResponse.model_validate(company).model_dump(mode="json"),
         requested_amount=payload.requested_amount,
         term_months=payload.term_months,
@@ -100,6 +100,13 @@ def accept_offer(session: Session, application_id: str) -> Application:
     return application
 
 
+def retry_application(session: Session, application_id: str) -> Application:
+    application = get_application(session, application_id)
+    transition(session, application, Status.CHECKING_BKI, Actor.CLIENT, {"action": "retry"})
+    session.commit()
+    return application
+
+
 def sign_application(session: Session, application_id: str, code: str) -> Application:
     application = get_application(session, application_id)
     check_transition(application.status, Status.SIGNED, Actor.CLIENT)
@@ -108,16 +115,16 @@ def sign_application(session: Session, application_id: str, code: str) -> Applic
             429,
             "SIGN_ATTEMPTS_EXCEEDED",
             "Лимит попыток подписания исчерпан. Создайте новую демо-заявку.",
-            {"attempts_remaining": 0},
+            {"attempts_left": 0},
         )
     if not compare_digest(code, "1234"):
         application.sign_attempts += 1
         session.commit()
         raise AppError(
-            400,
-            "INVALID_SIGN_CODE",
+            429 if application.sign_attempts == 5 else 400,
+            "SIGN_ATTEMPTS_EXCEEDED" if application.sign_attempts == 5 else "INVALID_SIGN_CODE",
             "Неверный код подписания.",
-            {"attempts_remaining": 5 - application.sign_attempts},
+            {"attempts_left": 5 - application.sign_attempts},
         )
     transition(session, application, Status.SIGNED, Actor.CLIENT)
     session.commit()

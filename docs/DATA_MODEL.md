@@ -70,7 +70,8 @@ erDiagram
     }
 ```
 
-companies содержит три синтетических профиля; feed_articles — по четыре материала
+companies содержит пять синтетических компаний из seed фронтенда (три демо-профиля);
+feed_articles — по четыре материала
 на retail/services/production/general. Лента фильтруется по segment, прямой FK
 к компании нет. Для context=rejected используется rejection_priority.
 

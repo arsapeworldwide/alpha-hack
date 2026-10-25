@@ -40,7 +40,7 @@ def test_invalid_application_inputs(client, changes):
         "/api/companies/lookup?inn=bad",
         "/api/feed?segment=bad",
         "/api/feed?context=bad",
-        "/api/applications/not-a-uuid",
+        "/api/companies/lookup",
         "/api/applications?limit=101",
         "/api/applications?offset=-1",
     ],
@@ -58,9 +58,9 @@ def test_clear_inn_error(client):
 def test_missing_application_and_unknown_route(client):
     response = client.get(f"/api/applications/{uuid4()}")
     assert response.status_code == 404
-    assert response.json()["code"] == "APPLICATION_NOT_FOUND"
+    assert response.json()["code"] == "NOT_FOUND"
     assert client.get("/not-a-route").json()["code"] == "NOT_FOUND"
-    assert client.put("/api/health").json()["code"] == "METHOD_NOT_ALLOWED"
+    assert client.put("/api/health").json()["code"] == "NOT_FOUND"
 
 
 def test_request_id_and_redacted_validation(client):
@@ -101,7 +101,7 @@ def test_database_error_is_a_safe_503(client):
     client.app.dependency_overrides[get_session] = lambda: UnavailableSession()
     response = client.get("/api/health")
     assert response.status_code == 503
-    assert response.json()["code"] == "DATABASE_UNAVAILABLE"
+    assert response.json()["code"] == "INTERNAL_ERROR"
     assert "private" not in response.text
 
 

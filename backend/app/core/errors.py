@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -10,7 +12,16 @@ from app.domain.state_machine import InvalidTransition
 
 
 class ErrorResponse(BaseModel):
-    code: str
+    code: Literal[
+        "VALIDATION_ERROR",
+        "NOT_FOUND",
+        "COMPANY_NOT_FOUND",
+        "INVALID_TRANSITION",
+        "INVALID_SIGN_CODE",
+        "TOO_MANY_ATTEMPTS",
+        "UNAUTHORIZED",
+        "INTERNAL_ERROR",
+    ]
     message: str
     details: dict = Field(default_factory=dict)
 
@@ -24,9 +35,24 @@ class AppError(Exception):
 
 
 def error_response(request: Request, status: int, code: str, message: str, details=None):
+    public_codes = {
+        "APPLICATION_NOT_FOUND": "NOT_FOUND",
+        "BANK_UNAUTHORIZED": "UNAUTHORIZED",
+        "SIGN_ATTEMPTS_EXCEEDED": "TOO_MANY_ATTEMPTS",
+        "METHOD_NOT_ALLOWED": "NOT_FOUND",
+        "IDEMPOTENCY_CONFLICT": "INVALID_TRANSITION",
+        "UPDATE_CONFLICT": "INVALID_TRANSITION",
+        "BANK_SCORING_REQUIRED": "INVALID_TRANSITION",
+        "BANK_RATE_UNAVAILABLE": "INVALID_TRANSITION",
+        "DATABASE_UNAVAILABLE": "INTERNAL_ERROR",
+        "HTTP_ERROR": "INTERNAL_ERROR",
+    }
+    public_code = public_codes.get(code, code)
+    if public_code != code:
+        details = {**(details or {}), "reason": code}
     return JSONResponse(
         status_code=status,
-        content={"code": code, "message": message, "details": details or {}},
+        content={"code": public_code, "message": message, "details": details or {}},
         headers={"X-Request-ID": getattr(request.state, "request_id", "unknown")},
     )
 

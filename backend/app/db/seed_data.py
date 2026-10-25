@@ -28,6 +28,27 @@ COMPANIES = (
     },
 )
 
+REGISTRY_EXTRAS = (
+    {
+        "inn": "7734567890",
+        "name": "ООО «Северный Цех»",
+        "annual_revenue": 60_000_000,
+        "monthly_payments": 500_000,
+        "credit_history": "excellent",
+        "business_age_years": 4,
+        "segment": "production",
+    },
+    {
+        "inn": "500200111111",
+        "name": "ИП Смирнова",
+        "annual_revenue": 12_000_000,
+        "monthly_payments": 50_000,
+        "credit_history": "fair",
+        "business_age_years": 2,
+        "segment": "services",
+    },
+)
+
 # Отдельные тексты по сегментам не создают впечатление настоящих банковских советов.
 SEGMENT_TIPS = {
     "retail": (

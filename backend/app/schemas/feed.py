@@ -1,16 +1,22 @@
-from pydantic import BaseModel, ConfigDict
+from typing import Literal
+
+from pydantic import BaseModel
 
 from app.domain.types import Segment
 
 
 class FeedArticleResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: str
-    segment: Segment
     title: str
     summary: str
-    full_text: str
+    body: str
     tag: str
-    reading_minutes: int
-    synthetic: bool
+    read_minutes: int
+    synthetic: Literal[True] = True
+
+
+class FeedResponse(BaseModel):
+    segment: Segment
+    segment_label: str
+    reason: str
+    items: list[FeedArticleResponse]

@@ -33,6 +33,7 @@ coverage/
 docker-data/
 backend/data/
 /backend-handoff*.zip
+/tests/e2e/artifacts/
 *.log
 
 # IDE and OS

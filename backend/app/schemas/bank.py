@@ -9,5 +9,5 @@ class BankDecisionRequest(BaseModel):
     action: Literal["approve", "reject"]
     comment: Annotated[
         str,
-        StringConstraints(strict=True, strip_whitespace=True, min_length=1, max_length=1000),
-    ]
+        StringConstraints(strict=True, strip_whitespace=True, max_length=500),
+    ] = ""

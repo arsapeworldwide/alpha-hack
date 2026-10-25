@@ -27,17 +27,17 @@ STATUS_LABELS = dict(
         Status,
         (
             "Черновик",
-            "Заявка подана",
-            "Проверка ЕГРЮЛ",
-            "Проверка БКИ",
+            "Заявка отправлена",
+            "Проверка в ЕГРЮЛ",
+            "Запрос в БКИ",
             "Скоринг",
             "Одобрено",
             "Встречное предложение",
             "Отказ",
             "Нужна повторная проверка",
-            "Предложение принято",
-            "Подписано",
-            "Средства выданы",
+            "Условия приняты",
+            "Договор подписан",
+            "Кредит выдан",
         ),
         strict=True,
     )
@@ -46,9 +46,10 @@ STATUS_LABELS = dict(
 TRANSITIONS: dict[Actor, dict[Status, frozenset[Status]]] = {
     Actor.CLIENT: {
         Status.DRAFT: frozenset({Status.SUBMITTED}),
-        Status.APPROVED: frozenset({Status.SIGNED, Status.OFFER_ACCEPTED}),
+        Status.APPROVED: frozenset({Status.SIGNED}),
         Status.COUNTER_OFFER: frozenset({Status.OFFER_ACCEPTED}),
         Status.OFFER_ACCEPTED: frozenset({Status.SIGNED}),
+        Status.NEEDS_RECHECK: frozenset({Status.CHECKING_BKI}),
     },
     Actor.SYSTEM: {
         Status.SUBMITTED: frozenset({Status.CHECKING_EGRUL}),

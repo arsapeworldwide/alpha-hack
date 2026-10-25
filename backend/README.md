@@ -2,7 +2,7 @@
 
 Реализованы БД, синтетические данные, бизнес-логика, API и конвейер.
 При старте создаются таблицы и добавляется seed; Swagger доступен на `/api/docs`.
-Docker и банковская роль реализованы; контракт пока остаётся черновиком бэкенда.
+Docker и банковская роль реализованы; API согласован с веткой frontend.
 
 Стек: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.x,
 SQLite с переключением через DATABASE_URL, pytest, httpx, ruff.
@@ -19,7 +19,8 @@ docker compose up --build
 Для автоматизации можно использовать `docker compose up --build --wait`.
 Копировать `.env.example` не обязательно. Для своих настроек создайте `.env`
 в корне или задайте переменные окружения перед запуском compose.
-Существующие frontend-сервисы не менялись: сейчас папки frontend/ нет.
+Сайт доступен на http://localhost:8080, работает в API-режиме по умолчанию.
+Исходники frontend/ не изменялись; compose включает его сборку и ожидание backend.
 Пример интеграции nginx — [FRONTEND_INTEGRATION](../docs/FRONTEND_INTEGRATION.md).
 
 Образ собирается из backend/Dockerfile, устанавливает runtime requirements.txt
@@ -132,7 +133,8 @@ macOS / Linux:
 
 `app/domain/` содержит обычные функции и dataclass без FastAPI, Pydantic и БД.
 `app/db/` отвечает за SQLAlchemy и seed; `app/core/` — за настройки.
-Платёж и переплата округляются half-up независимо от неокруглённого платежа.
+Месячный платёж округляется half-up; total_payment = monthly_payment * term_months,
+overpayment = total_payment − approved_amount. Порядок согласован с пользователем и фронтендом.
 Решение сравнивает неокруглённую максимальную сумму с запрошенной;
 встречное предложение округляется вниз до 100 000 рублей.
 
@@ -140,7 +142,7 @@ macOS / Linux:
 миграций (например, Alembic) до промышленного запуска.
 ЕГРЮЛ, БКИ, подписание кодом 1234 и выдача — локальные симуляторы.
 Все данные синтетические; ИНН могут случайно совпасть с реальными.
-Все три исхода проверены через API в Docker. Проверка через интерфейс ожидает frontend/.
+Все три исхода проверены через API и кликами в браузере на реальном бэкенде.
 
 ## Сквозная проверка API
 
@@ -148,7 +150,7 @@ macOS / Linux:
 Вызовите GET /api/demo-profiles и выберите профиль. POST /api/applications:
 
 ```json
-{"inn":"7712345678","requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+{"company":{"inn":"7712345678","name":"ООО Альфа Ритейл","annual_revenue":180000000,"monthly_payments":400000,"credit_history":"excellent","business_age_years":7,"segment":"retail"},"requested_amount":10000000,"term_months":36,"goal":"working_capital"}
 ```
 
 Создание вернёт 201/SUBMITTED. Опрос GET /api/applications/{id} через ~4 секунды
@@ -159,7 +161,7 @@ macOS / Linux:
 APPROVED подписывается POST /api/applications/{id}/sign с {"code":"1234"}.
 COUNTER_OFFER сначала требует POST /api/applications/{id}/accept-offer.
 После SIGNED автоматическая выдача занимает ещё один этап. Отказ не подписывается.
-События, факторы, параметры и этапы включены в ответ заявки.
+События включены в events, этапы — в pipeline, факторы и score — в decision.
 POST /api/demo/reset очищает заявки и сохраняет профили/материалы.
 
 Для сбоя задайте SIMULATE_BKI_FAILURE=true перед запуском: заявка остановится
@@ -170,8 +172,9 @@ POST /api/demo/reset очищает заявки и сохраняет проф�
 ## Контракт и адаптеры
 
 Для экспорта схемы из backend/: `python -m scripts.export_openapi`.
-PyYAML нужен только для экспорта и контрактного теста, в runtime-lock его нет.
-Все 12 операций, включая банковские, включены в экспорт.
+PyYAML и jsonschema нужны только для экспорта и контрактных тестов, в runtime-lock их нет.
+Все 13 операций, включая банковские и retry, включены в экспорт.
+Ответы проверяются также по исходному контракту docs/frontend/openapi.yaml.
 Провайдеры выбираются настройками EGRUL_PROVIDER и BKI_PROVIDER;
 для нового адаптера реализуйте соответствующий ABC и зарегистрируйте его
 в integrations/providers.py и допустимых значениях Settings.
@@ -181,9 +184,9 @@ PyYAML нужен только для экспорта и контрактног
 
 В Swagger нажмите Authorize и введите demo-bank-token (или BANK_API_TOKEN из env).
 GET /api/bank/applications возвращает очередь с факторами; POST
-/api/bank/applications/{id}/decision принимает action=approve|reject и непустой comment.
+/api/bank/applications/{id}/decision принимает action=approve|reject и comment (до 500 символов).
 Без токена — 401. Комментарий виден в клиентском журнале, в логи не пишется.
-Решение сотрудника помечено manual=true и атомарно сохраняется с событием actor=bank.
+Решение сотрудника помечено decided_by=bank и атомарно сохраняется с событием actor=bank.
 approve при score от 45 одобряет исходную запрошенную сумму по ставке SPEC;
 score и факторы не пересчитываются. Для score <45 ставка не определена — 409.
 NEEDS_RECHECK без скоринга нельзя одобрить. После принятия предложения клиентом,

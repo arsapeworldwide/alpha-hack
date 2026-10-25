@@ -1,0 +1,138 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+/*
+  Визуальный язык — как у современных банковских сайтов для бизнеса: белая страница,
+  серые плашки без теней, поля с серой заливкой, крупные жирные заголовки, один красный акцент.
+  Токены используются как bg-surface, text-ink, text-muted и т. д.
+*/
+@theme {
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-page: #ffffff;
+  --color-surface: #f3f4f5;
+  --color-surface-hover: #e9ebee;
+  --color-ink: #0b1f35;
+  --color-muted: #6d7986;
+  --color-line: #dcdfe3;
+  --color-accent: #ef3124;
+  --color-accent-dark: #d4291d;
+  --color-success: #21a038;
+  --color-warning: #f5a623;
+  --color-info: #2a77ef;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-page);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+}
+
+/* Слайдер, прижатый к нижнему краю поля суммы/срока. --fill задаёт компонент SliderField */
+/* Ширину не задаём: этот CSS вне слоёв Tailwind и перебил бы классы ширины у компонента */
+.range {
+  appearance: none;
+  display: block;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+.range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(to right, var(--color-accent) var(--fill), transparent var(--fill));
+}
+.range::-moz-range-track {
+  height: 2px;
+  background: transparent;
+}
+.range::-moz-range-progress {
+  height: 2px;
+  background: var(--color-accent);
+}
+.range::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -9px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(11, 31, 53, 0.25);
+}
+.range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(11, 31, 53, 0.25);
+}
+.range:focus-visible {
+  outline: none;
+}
+.range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(239, 49, 36, 0.25);
+}
+
+/* Смена материалов ленты: короткое проявление, чтобы было видно, что лента подстроилась */
+@keyframes feed-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.feed-in {
+  animation: feed-in 0.35s ease-out both;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+dialog.modal[open] {
+  animation: modal-in 0.2s ease-out;
+}
+
+/* Активный этап конвейера: бегущий блик по тексту */
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+.shimmer-text {
+  background: linear-gradient(90deg, var(--color-muted) 40%, var(--color-ink) 50%, var(--color-muted) 60%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Галочка этапа появляется с лёгким «щелчком» */
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  70% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.stage-done {
+  animation: pop 0.35s ease-out both;
+}
+
+/* Выдача кредита: один выразительный момент на весь сценарий */
+@keyframes success-ring {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.success-mark {
+  animation: success-ring 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+/* Уважаем настройку «уменьшить движение» в системе пользователя */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

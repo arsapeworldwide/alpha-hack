@@ -38,6 +38,6 @@ def test_bank_rejection_and_client_signature_are_serialized(tmp_path):
                         break
                     await asyncio.sleep(0.005)
                 assert detail["status"] == expected
-                assert detail["decision"]["manual"] is (rejected.status_code == 200)
+                assert (detail["decision"]["decided_by"] == "bank") is (rejected.status_code == 200)
 
     asyncio.run(scenario())

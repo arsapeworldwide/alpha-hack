@@ -2,21 +2,21 @@ from decimal import Decimal
 
 import pytest
 
-from app.domain.annuity import annuity_payment, maximum_amount, round_rubles
+from app.domain.annuity import annuity_payment, loan_totals, maximum_amount, round_rubles
 
 
 @pytest.mark.parametrize(
     "amount,rate,months,payment,overpayment",
     [
-        (10_000_000, "19", 36, 366_560, 3_196_167),
-        (2_500_000, "24", 36, 98_082, 1_030_957),
-        (1_000_000, "21", 12, 93_114, 117_365),
+        (10_000_000, "19", 36, 366_560, 3_196_160),
+        (2_500_000, "24", 36, 98_082, 1_030_952),
+        (1_000_000, "21", 12, 93_114, 117_368),
     ],
 )
 def test_known_payments(amount, rate, months, payment, overpayment):
     raw = annuity_payment(amount, Decimal(rate), months)
     assert round_rubles(raw) == payment
-    assert round_rubles(raw * months - amount) == overpayment
+    assert loan_totals(amount, Decimal(rate), months) == (payment, payment * months, overpayment)
     assert abs(maximum_amount(raw, Decimal(rate), months) - amount) < Decimal("0.000001")
 
 

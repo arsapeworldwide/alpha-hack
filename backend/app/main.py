@@ -43,8 +43,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title="Умный кредитный кабинет предпринимателя",
-        version="0.1.0",
-        description="ЧЕРНОВИК бэкенда, сверить с контрактом фронтенда. Все данные синтетические.",
+        version="1.0.0",
+        description="Контракт согласован с веткой frontend. Все данные синтетические.",
         docs_url=None,
         openapi_url="/api/openapi.json",
         redoc_url=None,

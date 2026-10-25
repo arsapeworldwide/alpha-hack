@@ -1,9 +1,9 @@
-# ЧЕРНОВИК бэкенда, сверить с контрактом фронтенда
+# Экспорт FastAPI; исходный контракт: docs/frontend/openapi.yaml
 openapi: 3.1.0
 info:
   title: Умный кредитный кабинет предпринимателя
-  description: ЧЕРНОВИК бэкенда, сверить с контрактом фронтенда. Все данные синтетические.
-  version: 0.1.0
+  description: Контракт согласован с веткой frontend. Все данные синтетические.
+  version: 1.0.0
 paths:
   /api/applications:
     post:
@@ -115,7 +115,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ApplicationResponse'
+                  $ref: '#/components/schemas/ApplicationSummary'
                 title: Response Application History Api Applications Get
         '400':
           content:
@@ -171,7 +171,6 @@ paths:
         required: true
         schema:
           type: string
-          format: uuid
           title: Id
       responses:
         '200':
@@ -234,7 +233,6 @@ paths:
         required: true
         schema:
           type: string
-          format: uuid
           title: Id
       responses:
         '200':
@@ -297,7 +295,6 @@ paths:
         required: true
         schema:
           type: string
-          format: uuid
           title: Id
       requestBody:
         required: true
@@ -305,6 +302,68 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SignRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Too Many Requests
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Service Unavailable
+  /api/applications/{id}/retry:
+    post:
+      tags:
+      - applications
+      summary: Retry
+      operationId: retry_api_applications__id__retry_post
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Id
       responses:
         '200':
           description: Successful Response
@@ -374,7 +433,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CompanyLookupResponse'
+                $ref: '#/components/schemas/CompanyResponse'
         '400':
           content:
             application/json:
@@ -430,7 +489,7 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/CompanyResponse'
+                  $ref: '#/components/schemas/DemoProfileResponse'
                 type: array
                 title: Response Demo Profiles Api Demo Profiles Get
         '400':
@@ -547,10 +606,11 @@ paths:
         in: query
         required: false
         schema:
-          anyOf:
-          - const: rejected
-            type: string
-          - type: 'null'
+          enum:
+          - default
+          - rejected
+          type: string
+          default: default
           title: Context
       responses:
         '200':
@@ -558,10 +618,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FeedArticleResponse'
-                title: Response Feed Api Feed Get
+                $ref: '#/components/schemas/FeedResponse'
         '400':
           content:
             application/json:
@@ -757,7 +814,6 @@ paths:
         required: true
         schema:
           type: string
-          format: uuid
           title: Id
       requestBody:
         required: true
@@ -839,11 +895,11 @@ components:
         status_label:
           type: string
           title: Status Label
-        message:
+        error_message:
           anyOf:
           - type: string
           - type: 'null'
-          title: Message
+          title: Error Message
         created_at:
           type: string
           format: date-time
@@ -854,46 +910,41 @@ components:
           title: Updated At
         company:
           $ref: '#/components/schemas/CompanyResponse'
-        parameters:
-          $ref: '#/components/schemas/LoanParameters'
-        stages:
+        requested_amount:
+          type: integer
+          title: Requested Amount
+        term_months:
+          type: integer
+          title: Term Months
+        goal:
+          $ref: '#/components/schemas/Goal'
+        goal_label:
+          type: string
+          title: Goal Label
+        pipeline:
           items:
             $ref: '#/components/schemas/PipelineStage'
           type: array
-          title: Stages
+          title: Pipeline
         decision:
           anyOf:
           - $ref: '#/components/schemas/DecisionResponse'
           - type: 'null'
-        score:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Score
-        factors:
-          items:
-            $ref: '#/components/schemas/FactorResponse'
-          type: array
-          title: Factors
-        rejection_reason:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Rejection Reason
-        recommendations:
-          items:
-            type: string
-          type: array
-          title: Recommendations
-        reapply_date:
-          anyOf:
-          - type: string
-            format: date
-          - type: 'null'
-          title: Reapply Date
-        sign_attempts_remaining:
+        sign_attempts_left:
           type: integer
-          title: Sign Attempts Remaining
+          title: Sign Attempts Left
+        signed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Signed At
+        disbursed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Disbursed At
         events:
           items:
             $ref: '#/components/schemas/EventResponse'
@@ -904,21 +955,59 @@ components:
       - id
       - status
       - status_label
-      - message
+      - error_message
       - created_at
       - updated_at
       - company
-      - parameters
-      - stages
+      - requested_amount
+      - term_months
+      - goal
+      - goal_label
+      - pipeline
       - decision
-      - score
-      - factors
-      - rejection_reason
-      - recommendations
-      - reapply_date
-      - sign_attempts_remaining
+      - sign_attempts_left
+      - signed_at
+      - disbursed_at
       - events
       title: ApplicationResponse
+    ApplicationSummary:
+      properties:
+        id:
+          type: string
+          title: Id
+        status:
+          $ref: '#/components/schemas/Status'
+        status_label:
+          type: string
+          title: Status Label
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        company_name:
+          type: string
+          title: Company Name
+        requested_amount:
+          type: integer
+          title: Requested Amount
+        approved_amount:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Approved Amount
+        goal:
+          $ref: '#/components/schemas/Goal'
+      type: object
+      required:
+      - id
+      - status
+      - status_label
+      - created_at
+      - company_name
+      - requested_amount
+      - approved_amount
+      - goal
+      title: ApplicationSummary
     BankDecisionRequest:
       properties:
         action:
@@ -929,33 +1018,14 @@ components:
           title: Action
         comment:
           type: string
-          maxLength: 1000
-          minLength: 1
+          maxLength: 500
           title: Comment
+          default: ''
       additionalProperties: false
       type: object
       required:
       - action
-      - comment
       title: BankDecisionRequest
-    CompanyLookupResponse:
-      properties:
-        found:
-          type: boolean
-          title: Found
-        company:
-          anyOf:
-          - $ref: '#/components/schemas/CompanyResponse'
-          - type: 'null'
-        message:
-          type: string
-          title: Message
-      type: object
-      required:
-      - found
-      - company
-      - message
-      title: CompanyLookupResponse
     CompanyResponse:
       properties:
         inn:
@@ -964,24 +1034,31 @@ components:
           title: Inn
         name:
           type: string
+          maxLength: 200
+          minLength: 1
           title: Name
         annual_revenue:
           type: integer
+          minimum: 1.0
           title: Annual Revenue
         monthly_payments:
           type: integer
+          minimum: 0.0
           title: Monthly Payments
         credit_history:
           $ref: '#/components/schemas/CreditHistory'
         business_age_years:
           type: integer
+          maximum: 100.0
+          minimum: 0.0
           title: Business Age Years
         segment:
-          $ref: '#/components/schemas/Segment'
-        synthetic:
-          type: boolean
-          title: Synthetic
-          default: true
+          type: string
+          enum:
+          - retail
+          - services
+          - production
+          title: Segment
       type: object
       required:
       - inn
@@ -1006,17 +1083,15 @@ components:
           title: Term Months
         goal:
           $ref: '#/components/schemas/Goal'
-        inn:
-          type: string
-          pattern: ^(?:[0-9]{10}|[0-9]{12})$
-          title: Inn
+        company:
+          $ref: '#/components/schemas/CompanyResponse'
       additionalProperties: false
       type: object
       required:
       - requested_amount
       - term_months
       - goal
-      - inn
+      - company
       title: CreateApplication
     CreditHistory:
       type: string
@@ -1027,18 +1102,36 @@ components:
       title: CreditHistory
     DecisionResponse:
       properties:
-        status:
-          $ref: '#/components/schemas/Status'
-        annual_rate:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Annual Rate
-        amount:
+        outcome:
+          type: string
+          enum:
+          - APPROVED
+          - COUNTER_OFFER
+          - REJECTED
+          title: Outcome
+        score:
           anyOf:
           - type: integer
           - type: 'null'
-          title: Amount
+          title: Score
+        factors:
+          items:
+            $ref: '#/components/schemas/FactorResponse'
+          type: array
+          title: Factors
+        rate:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Rate
+        approved_amount:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Approved Amount
+        term_months:
+          type: integer
+          title: Term Months
         monthly_payment:
           anyOf:
           - type: integer
@@ -1049,22 +1142,106 @@ components:
           - type: integer
           - type: 'null'
           title: Overpayment
-        manual:
-          type: boolean
-          title: Manual
+        total_payment:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total Payment
+        max_amount:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Max Amount
+        capacity:
+          type: integer
+          title: Capacity
+        debt_ratio:
+          type: number
+          title: Debt Ratio
+        rejection_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rejection Reason
+        recommendations:
+          items:
+            type: string
+          type: array
+          title: Recommendations
+        reapply_date:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Reapply Date
+        decided_by:
+          type: string
+          enum:
+          - system
+          - bank
+          title: Decided By
+        bank_comment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Bank Comment
       type: object
       required:
-      - status
-      - annual_rate
-      - amount
+      - outcome
+      - score
+      - factors
+      - rate
+      - approved_amount
+      - term_months
       - monthly_payment
       - overpayment
-      - manual
+      - total_payment
+      - max_amount
+      - capacity
+      - debt_ratio
+      - rejection_reason
+      - recommendations
+      - reapply_date
+      - decided_by
+      - bank_comment
       title: DecisionResponse
+    DemoProfileResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        label:
+          type: string
+          title: Label
+        risk_level:
+          type: string
+          enum:
+          - ideal
+          - medium
+          - risky
+          title: Risk Level
+        company:
+          $ref: '#/components/schemas/CompanyResponse'
+      type: object
+      required:
+      - id
+      - label
+      - risk_level
+      - company
+      title: DemoProfileResponse
     ErrorResponse:
       properties:
         code:
           type: string
+          enum:
+          - VALIDATION_ERROR
+          - NOT_FOUND
+          - COMPANY_NOT_FOUND
+          - INVALID_TRANSITION
+          - INVALID_SIGN_CODE
+          - TOO_MANY_ATTEMPTS
+          - UNAUTHORIZED
+          - INTERNAL_ERROR
           title: Code
         message:
           type: string
@@ -1110,16 +1287,22 @@ components:
       properties:
         code:
           type: string
+          enum:
+          - credit_history
+          - debt_load
+          - revenue
+          - business_age
+          - amount_to_revenue
           title: Code
         name:
           type: string
           title: Name
         points:
-          type: string
+          type: number
           title: Points
-        maximum:
+        max_points:
           type: integer
-          title: Maximum
+          title: Max Points
         explanation:
           type: string
           title: Explanation
@@ -1128,7 +1311,7 @@ components:
       - code
       - name
       - points
-      - maximum
+      - max_points
       - explanation
       title: FactorResponse
     FeedArticleResponse:
@@ -1136,37 +1319,57 @@ components:
         id:
           type: string
           title: Id
-        segment:
-          $ref: '#/components/schemas/Segment'
         title:
           type: string
           title: Title
         summary:
           type: string
           title: Summary
-        full_text:
+        body:
           type: string
-          title: Full Text
+          title: Body
         tag:
           type: string
           title: Tag
-        reading_minutes:
+        read_minutes:
           type: integer
-          title: Reading Minutes
+          title: Read Minutes
         synthetic:
           type: boolean
+          const: true
           title: Synthetic
+          default: true
       type: object
       required:
       - id
-      - segment
       - title
       - summary
-      - full_text
+      - body
       - tag
-      - reading_minutes
-      - synthetic
+      - read_minutes
       title: FeedArticleResponse
+    FeedResponse:
+      properties:
+        segment:
+          $ref: '#/components/schemas/Segment'
+        segment_label:
+          type: string
+          title: Segment Label
+        reason:
+          type: string
+          title: Reason
+        items:
+          items:
+            $ref: '#/components/schemas/FeedArticleResponse'
+          type: array
+          title: Items
+      type: object
+      required:
+      - segment
+      - segment_label
+      - reason
+      - items
+      title: FeedResponse
     Goal:
       type: string
       enum:
@@ -1191,40 +1394,24 @@ components:
       - database
       - synthetic
       title: HealthResponse
-    LoanParameters:
-      properties:
-        requested_amount:
-          type: integer
-          maximum: 15000000.0
-          minimum: 300000.0
-          title: Requested Amount
-        term_months:
-          type: integer
-          maximum: 36.0
-          minimum: 3.0
-          title: Term Months
-        goal:
-          $ref: '#/components/schemas/Goal'
-      additionalProperties: false
-      type: object
-      required:
-      - requested_amount
-      - term_months
-      - goal
-      title: LoanParameters
     PipelineStage:
       properties:
         code:
-          $ref: '#/components/schemas/Status'
-        name:
           type: string
-          title: Name
+          enum:
+          - egrul
+          - bki
+          - scoring
+          title: Code
+        title:
+          type: string
+          title: Title
         state:
           type: string
           enum:
           - pending
-          - active
-          - completed
+          - in_progress
+          - done
           - failed
           title: State
         started_at:
@@ -1242,21 +1429,21 @@ components:
       type: object
       required:
       - code
-      - name
+      - title
       - state
       title: PipelineStage
     ResetResponse:
       properties:
-        deleted_applications:
-          type: integer
-          title: Deleted Applications
-        message:
+        status:
           type: string
-          title: Message
+          title: Status
+          default: ok
+        removed_applications:
+          type: integer
+          title: Removed Applications
       type: object
       required:
-      - deleted_applications
-      - message
+      - removed_applications
       title: ResetResponse
     Segment:
       type: string

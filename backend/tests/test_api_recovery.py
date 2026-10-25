@@ -13,15 +13,15 @@ def test_bki_failure_and_recovery_after_restart(tmp_path):
     with TestClient(app) as client:
         application_id = client.post("/api/applications", json=application_payload()).json()["id"]
         detail = wait_for_status(client, application_id, "NEEDS_RECHECK")
-        assert detail["message"]
-        assert detail["rejection_reason"] is None
-        assert detail["stages"][2]["state"] == "failed"
+        assert detail["error_message"]
+        assert detail["decision"] is None
+        assert detail["pipeline"][1]["state"] == "failed"
         assert detail["events"][-1]["details"]["code"] == "BKI_UNAVAILABLE"
     with TestClient(create_app(make_settings(tmp_path))) as client:
         detail = wait_for_status(client, application_id, "APPROVED")
-        assert detail["score"] == 97
-        assert detail["stages"][2]["state"] == "completed"
-        assert len(detail["factors"]) == 5
+        assert detail["decision"]["score"] == 97
+        assert detail["pipeline"][1]["state"] == "done"
+        assert len(detail["decision"]["factors"]) == 5
         assert [e["to_status"] for e in detail["events"]].count("CHECKING_BKI") == 2
 
 
@@ -47,7 +47,7 @@ def test_interrupted_pipeline_resumes_without_duplicate_steps(tmp_path, stuck):
             "SCORING",
             "APPROVED",
         ]
-        assert len(detail["factors"]) == 5
+        assert len(detail["decision"]["factors"]) == 5
 
 
 def test_signed_application_is_disbursed_after_restart(tmp_path):
@@ -79,13 +79,13 @@ def test_reset_cancels_inflight_tasks_and_preserves_seed(tmp_path):
             assert client.post("/api/applications", json=application_payload()).status_code == 201
         reset = client.post("/api/demo/reset")
         assert reset.status_code == 200
-        assert reset.json()["deleted_applications"] == 2
+        assert reset.json()["removed_applications"] == 2
         assert client.get("/api/applications").json() == []
         assert not app.state.pipeline.tasks
         with app.state.session_factory() as session:
             for model in (Application, ApplicationEvent, ScoringFactor):
                 assert session.scalar(select(func.count()).select_from(model)) == 0
-            assert session.scalar(select(func.count()).select_from(Company)) == 3
+            assert session.scalar(select(func.count()).select_from(Company)) == 5
             assert session.scalar(select(func.count()).select_from(FeedArticle)) == 16
     with TestClient(create_app(make_settings(tmp_path))) as client:
         assert client.get("/api/applications").json() == []
@@ -99,13 +99,10 @@ def test_idempotency_and_sign_limit_survive_restart(tmp_path):
             "id"
         ]
         wait_for_status(client, application_id, "APPROVED")
-        for _ in range(5):
-            assert (
-                client.post(
-                    f"/api/applications/{application_id}/sign", json={"code": "0000"}
-                ).status_code
-                == 400
-            )
+        for attempt in range(5):
+            assert client.post(
+                f"/api/applications/{application_id}/sign", json={"code": "0000"}
+            ).status_code == (429 if attempt == 4 else 400)
     with TestClient(create_app(make_settings(tmp_path))) as client:
         duplicate = client.post("/api/applications", json=payload, headers=headers)
         assert duplicate.status_code == 200
