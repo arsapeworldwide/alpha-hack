@@ -15,12 +15,12 @@ class MemoryStorage {
 }
 
 describe('reducer', () => {
-  it('выбор профиля подставляет компанию; ручная правка снимает отметку профиля', () => {
+  it('выбор профиля подставляет компанию; ручная правка меняет данные, профиль остаётся выбранным', () => {
     let s = reducer(initialState, { type: 'SELECT_PROFILE', profile: alfa });
     expect(s.company?.inn).toBe('7712345678');
     expect(s.profileId).toBe('alfa-retail');
     s = reducer(s, { type: 'UPDATE_COMPANY', patch: { annual_revenue: 1 } });
-    expect(s.profileId).toBeNull();
+    expect(s.profileId).toBe('alfa-retail');
     expect(s.company?.annual_revenue).toBe(1);
   });
 
@@ -68,6 +68,17 @@ describe('reducer', () => {
     expect(s.applicationId).toBe('app_old');
     expect(s.company?.name).toBe('ИП Иванов');
     expect(s.form).toEqual({ requestedAmount: 10_000_000, termMonths: 24, goal: 'equipment' });
+  });
+
+  it('«Изменить условия» возвращает на калькулятор с теми же данными', () => {
+    let s = reducer(initialState, { type: 'SELECT_PROFILE', profile: alfa });
+    s = reducer(s, { type: 'SET_FORM', patch: { requestedAmount: 5_000_000 } });
+    s = reducer(s, { type: 'APPLICATION_RECEIVED', application: app('APPROVED') });
+    s = reducer(s, { type: 'EDIT_CONDITIONS' });
+    expect(s.step).toBe(2);
+    expect(s.applicationId).toBeNull();
+    expect(s.company?.name).toBe(alfa.company.name);
+    expect(s.form.requestedAmount).toBe(5_000_000);
   });
 
   it('лента: сегмент компании, после отказа — режим rejected', () => {

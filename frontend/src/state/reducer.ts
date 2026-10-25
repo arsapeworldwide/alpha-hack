@@ -33,6 +33,7 @@ export type Action =
   | { type: 'GO_TO_STEP'; step: Step }
   | { type: 'APPLICATION_RECEIVED'; application: Application }
   | { type: 'OPEN_APPLICATION'; application: Application }
+  | { type: 'EDIT_CONDITIONS' }
   | { type: 'START_OVER' }
   | { type: 'RESET_ALL' };
 
@@ -63,8 +64,8 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'UPDATE_COMPANY':
       if (!state.company) return state;
-      // Правка карточки вручную — это уже не «чистый» демо-профиль
-      return { ...state, profileId: null, company: { ...state.company, ...action.patch } };
+      // Профиль остаётся выбранным: список показывает изменённые данные с пометкой «Изменено»
+      return { ...state, company: { ...state.company, ...action.patch } };
 
     case 'SET_FORM':
       return { ...state, form: normalizeForm({ ...state.form, ...action.patch }) };
@@ -99,6 +100,10 @@ export function reducer(state: AppState, action: Action): AppState {
         step: stepForStatus(application.status) ?? 4,
       };
     }
+
+    case 'EDIT_CONDITIONS':
+      // «Назад» с проверки или решения: компания и условия сохраняются, текущая заявка остаётся в истории
+      return { ...state, step: state.company ? 2 : 1, applicationId: null, application: null };
 
     case 'START_OVER':
       return { ...state, step: 1, applicationId: null, application: null };
