@@ -28,6 +28,7 @@ def make_settings(tmp_path: Path, **overrides) -> Settings:
                 "database_url": f"sqlite:///{(tmp_path / 'api.db').as_posix()}",
                 "pipeline_step_seconds": 0,
                 "log_level": "ERROR",
+                "document_directory": str(tmp_path / "documents"),
             }
             | overrides
         ),
@@ -66,6 +67,7 @@ def application_payload(inn: str = "7712345678", **changes) -> dict:
         "requested_amount": 10_000_000,
         "term_months": 36,
         "goal": "working_capital",
+        "consent": True,
     } | changes
 
 

@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.db.models import Application, ScoringFactor
+from app.db.products import PRODUCTS, Product
+from app.db.workflow_models import ApplicationWorkflow
 from app.domain.decision import make_decision, three_months_later
 from app.domain.state_machine import Actor, Status
 from app.domain.types import ScoringInput
@@ -74,6 +76,7 @@ def save_decision(session: Session, application: Application) -> Status:
         goal=application.goal,
     )
     result = make_decision(data, datetime.now(UTC).date())
+    application.manual_decision = False
     application.score = result.scoring.score
     application.rate = result.rate
     application.offered_amount = result.amount
@@ -82,6 +85,9 @@ def save_decision(session: Session, application: Application) -> Status:
     application.rejection_reason = result.rejection_reason
     application.recommendations = list(result.recommendations)
     application.reapply_date = result.reapply_date
+    # При повторной проверке старые коды нужно удалить до вставки новых: они уникальны.
+    application.factors.clear()
+    session.flush()
     application.factors = [
         ScoringFactor(
             code=f.code,
@@ -92,4 +98,20 @@ def save_decision(session: Session, application: Application) -> Status:
         )
         for f in result.scoring.factors
     ]
+    workflow = session.get(ApplicationWorkflow, application.id)
+    code = (
+        workflow.product_code
+        if workflow and workflow.product_code
+        else next(p["code"] for p in PRODUCTS if p["goal"] == application.goal)
+    )
+    product = session.get(Product, code)
+    if (
+        result.amount
+        and product
+        and (
+            result.amount > product.auto_limit
+            or (45 <= result.scoring.score < 60 and result.amount > 5_000_000)
+        )
+    ):
+        return Status.MANUAL_REVIEW
     return result.status

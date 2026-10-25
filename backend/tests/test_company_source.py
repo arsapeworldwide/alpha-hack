@@ -16,4 +16,8 @@ def test_financial_data_cannot_be_overridden_by_application_body(client):
     assert detail["company"] == original
     assert detail["decision"]["score"] == 8
     registry = client.get("/api/companies/lookup?inn=7723456789").json()
-    assert registry == original
+    assert registry == {
+        key: value
+        for key, value in original.items()
+        if key not in {"monthly_payments", "credit_history"}
+    }

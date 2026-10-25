@@ -1,7 +1,7 @@
 # Бэкенд
 
 Реализованы БД, синтетические данные, бизнес-логика, API и конвейер.
-При старте создаются таблицы и добавляется seed; Swagger доступен на `/api/docs`.
+При старте выполняется Alembic upgrade head и добавляется seed; Swagger доступен на `/api/docs`.
 Docker и банковская роль реализованы; API согласован с веткой frontend.
 В P1 добавлены Bearer-сессии, роли, доступ по компаниям и демо-пульт БКИ.
 Учётки и новые права: [P1_CONTRACT](../docs/P1_CONTRACT.md).
@@ -117,7 +117,10 @@ macOS / Linux:
 
 | Переменная | По умолчанию | Назначение |
 |---|---|---|
-| DATABASE_URL | sqlite:///./data/credit.db | Локальный файл БД |
+| DATABASE_URL | sqlite:///./data/credit.db | SQLite или postgresql+psycopg://... |
+| DOCUMENT_DIRECTORY | ./data/documents | Каталог вложений; в Docker /data/documents |
+| FRONTEND_PORT | 8080 | Публикуемый порт сайта |
+| POSTGRES_PASSWORD | synthetic-postgres-password | Только для PostgreSQL overlay |
 | BACKEND_PORT | 8000 | Публикуемый порт compose; внутри контейнера всегда 8000 |
 | BANK_API_TOKEN | demo-bank-token | Токен банковской роли |
 | PIPELINE_STEP_SECONDS | 1 | Пауза этапа, 0 в тестах |
@@ -131,8 +134,8 @@ macOS / Linux:
 
 В корневом `.env.example` путь DATABASE_URL предназначен для контейнера `/data`.
 Для локального запуска оставьте значение по умолчанию из таблицы.
-Драйвер PostgreSQL не входит в SQLite-сборку; при переходе потребуются драйвер,
-новый DATABASE_URL и миграции, бизнес-логику менять не требуется.
+Драйвер psycopg и Alembic включены в lock. Для PostgreSQL используйте overlay
+из корневого README. Его БД отдельная: перенос содержимого SQLite не выполняется.
 
 ## Архитектура и ограничения
 
@@ -143,8 +146,11 @@ overpayment = total_payment − approved_amount. Порядок согласов
 Решение сравнивает неокруглённую максимальную сумму с запрошенной;
 встречное предложение округляется вниз до 100 000 рублей.
 
-Для MVP используется `create_all`: изменение схемы существующей БД потребует
-миграций (например, Alembic) до промышленного запуска.
+Схему обновляет Alembic 0001, включая старую SQLite с CHECK статусов.
+Воспроизводимая CLI-команда из backend/: `.venv/Scripts/alembic.exe upgrade head`
+(Unix: `.venv/bin/alembic upgrade head`). DATABASE_URL берётся из env.
+Перед обновлением нужна резервная копия; downgrade с удалением данных запрещён.
+Миграция сохранения старых заявок, факторов и событий проверена отдельно.
 ЕГРЮЛ, БКИ, подписание кодом 1234 и выдача — локальные симуляторы.
 Все данные синтетические; ИНН могут случайно совпасть с реальными.
 Все три исхода проверены через API и кликами в браузере на реальном бэкенде.
@@ -155,7 +161,7 @@ overpayment = total_payment − approved_amount. Порядок согласов
 Вызовите GET /api/demo-profiles и выберите профиль. POST /api/applications:
 
 ```json
-{"company":{"inn":"7712345678","name":"ООО Альфа Ритейл","annual_revenue":180000000,"monthly_payments":400000,"credit_history":"excellent","business_age_years":7,"segment":"retail"},"requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+{"company":{"inn":"7712345678","name":"ООО Альфа Ритейл","annual_revenue":180000000,"monthly_payments":400000,"credit_history":"excellent","business_age_years":7,"segment":"retail"},"requested_amount":10000000,"term_months":36,"goal":"working_capital","consent":true,"product_code":"WORKING_CAPITAL"}
 ```
 
 Создание вернёт 201/SUBMITTED. Опрос GET /api/applications/{id} через ~4 секунды
@@ -178,7 +184,7 @@ POST /api/demo/reset очищает заявки и сохраняет проф�
 
 Для экспорта схемы из backend/: `python -m scripts.export_openapi`.
 PyYAML и jsonschema нужны только для экспорта и контрактных тестов, в runtime-lock их нет.
-Все 20 операций, включая auth, банковскую карточку и демо-пульт, включены в экспорт.
+Все 24 операции, включая продукты, документы, auth, банк и демо-пульт, включены в экспорт.
 Ответы проверяются также по исходному контракту docs/frontend/openapi.yaml.
 Провайдеры выбираются настройками EGRUL_PROVIDER и BKI_PROVIDER;
 для нового адаптера реализуйте соответствующий ABC и зарегистрируйте его
@@ -221,3 +227,23 @@ NEEDS_RECHECK без скоринга нельзя одобрить. После 
 и [общие эталонные кейсы](../docs/scoring_cases.json).
 Уточнения API: [CONTRACT_CHANGES](../docs/CONTRACT_CHANGES.md),
 ограничения и развитие: [REVIEW_NOTES](../docs/REVIEW_NOTES.md).
+
+
+## Обновление после демо
+
+[Изменения контракта](../docs/DEMO_FIXES_CONTRACT.md): публичные компании без БКИ,
+обязательное consent=true, GET /products, counter/request_info в банковском решении,
+INFO_REQUESTED и MANUAL_REVIEW. По умолчанию банковский UI показывает только
+встречные предложения, ручное рассмотрение и повторную проверку.
+В API старый view=reviewable оставлен для совместимости, новый view=needs_decision
+соответствует UI. view=all включает также завершённые заявки.
+
+Документы загружаются multipart, проверяются размер, MIME и сигнатура; файл
+хранится под случайным именем, SHA-256 и метаданные — в БД. Скачать могут только
+пользователь с доступом к компании или банк. Файл — подтверждение в демо:
+OCR, анализ содержимого, антивирус и проверка подлинности не реализованы.
+Повторный конвейер рассчитывает исходные условия, не условия прошлой ручной оферты.
+
+`python -m app.preflight` проверяет health/БД, вход, БКИ, профили и продукты.
+Он не сбрасывает заявки и не меняет режим БКИ. После включения сбоя его нужно
+выключить пультом: простой рестарт сохраняет выбранный режим.

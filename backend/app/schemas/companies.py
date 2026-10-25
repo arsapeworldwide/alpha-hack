@@ -19,8 +19,17 @@ class CompanyResponse(BaseModel):
     segment: Literal["retail", "services", "production"]
 
 
+class RegistryCompanyResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
+    inn: Inn
+    name: Annotated[str, Field(strict=True, min_length=1, max_length=200)]
+    annual_revenue: Annotated[int, Field(strict=True, ge=1)]
+    business_age_years: Annotated[int, Field(strict=True, ge=0, le=100)]
+    segment: Literal["retail", "services", "production"]
+
+
 class DemoProfileResponse(BaseModel):
     id: str
     label: str
     risk_level: Literal["ideal", "medium", "risky"]
-    company: CompanyResponse
+    company: RegistryCompanyResponse

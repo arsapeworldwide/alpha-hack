@@ -15,6 +15,8 @@ RUN python -m pip install --no-cache-dir --only-binary=:all: --require-hashes -r
     && chown app:app /data
 
 COPY app ./app
+COPY migrations ./migrations
+COPY alembic.ini ./alembic.ini
 
 USER 10001:10001
 EXPOSE 8000

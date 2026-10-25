@@ -28,6 +28,7 @@ def create(base: str, inn: str, expected: str, timeout: float):
             "requested_amount": 10_000_000,
             "term_months": 36,
             "goal": "working_capital",
+            "consent": True,
         },
     )
     check(status == 201 and created["status"] == "SUBMITTED", "Создание не вернуло 201/SUBMITTED")

@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.domain.state_machine import Actor, Status
 from app.domain.types import Goal
-from app.schemas.companies import CompanyResponse
+from app.schemas.companies import CompanyResponse, RegistryCompanyResponse
 
 
 class LoanParameters(BaseModel):
@@ -23,7 +23,15 @@ class LoanParameters(BaseModel):
 
 
 class CreateApplication(LoanParameters):
-    company: CompanyResponse
+    company: RegistryCompanyResponse
+    consent: Annotated[bool, Field(strict=True)]
+    product_code: Literal["WORKING_CAPITAL", "INVEST", "OVERDRAFT"] | None = None
+
+    @model_validator(mode="after")
+    def require_consent(self):
+        if not self.consent:
+            raise ValueError("Для отправки заявки необходимо согласие на запрос в БКИ")
+        return self
 
 
 class SignRequest(BaseModel):
@@ -107,6 +115,8 @@ class ApplicationResponse(UtcModel):
     signed_at: datetime | None
     disbursed_at: datetime | None
     events: list[EventResponse]
+    product_code: str | None = None
+    requested_documents: list[dict] = Field(default_factory=list)
 
 
 class ApplicationSummary(UtcModel):

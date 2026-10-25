@@ -7,7 +7,7 @@ services:
         VITE_API_BASE_URL: /api
         VITE_MOCK_BKI_FAILURE: ${VITE_MOCK_BKI_FAILURE:-false}
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-8080}:80"
     volumes:
       - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
     restart: unless-stopped
@@ -34,6 +34,7 @@ services:
       SIMULATE_BKI_FAILURE: ${SIMULATE_BKI_FAILURE:-false}
       DEMO_MODE: ${DEMO_MODE:-true}
       SESSION_HOURS: ${SESSION_HOURS:-8}
+      DOCUMENT_DIRECTORY: /data/documents
       EGRUL_PROVIDER: ${EGRUL_PROVIDER:-simulator}
       BKI_PROVIDER: ${BKI_PROVIDER:-simulator}
       CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:5173","http://localhost:8080"]}'
@@ -42,7 +43,7 @@ services:
       - backend_data:/data
     read_only: true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=16m
+      - /tmp:rw,noexec,nosuid,size=64m
     cap_drop:
       - ALL
     security_opt:

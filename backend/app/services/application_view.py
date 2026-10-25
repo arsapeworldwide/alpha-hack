@@ -1,8 +1,12 @@
 from decimal import ROUND_HALF_UP, Decimal
 
+from sqlalchemy import select
+from sqlalchemy.orm import object_session
+
 from app.db.models import Application
+from app.db.workflow_models import ApplicationDocument, ApplicationWorkflow
 from app.domain.annuity import maximum_amount, round_rubles
-from app.domain.scoring import annual_rate, debt_ratio, payment_capacity
+from app.domain.scoring import annual_rate, calculate_score, debt_ratio, payment_capacity
 from app.domain.state_machine import STATUS_LABELS, Actor, Status
 from app.domain.types import ScoringInput
 from app.schemas.applications import (
@@ -43,6 +47,8 @@ def scoring_input(application: Application) -> ScoringInput:
 
 
 def decision_view(application: Application) -> DecisionResponse | None:
+    if application.status in {Status.MANUAL_REVIEW, Status.INFO_REQUESTED}:
+        return None
     outcome = next(
         (e.to_status for e in reversed(application.events) if e.to_status in DECISION_STATUSES),
         None,
@@ -50,13 +56,24 @@ def decision_view(application: Application) -> DecisionResponse | None:
     if outcome is None:
         return None
     data = scoring_input(application)
+    explanations = {factor.code: factor.explanation for factor in calculate_score(data).factors}
+    term = next(
+        (
+            e.details["offer"]["term_months"]
+            for e in reversed(application.events)
+            if e.actor == Actor.BANK
+            and e.details.get("offer")
+            and e.details["offer"].get("term_months")
+        ),
+        application.term_months,
+    )
+    if not application.manual_decision:
+        term = application.term_months
     capacity = payment_capacity(data)
     rate = application.rate
     if rate is None and not application.manual_decision and (application.score or 0) >= 45:
         rate = annual_rate(application.score, application.goal)
-    maximum = (
-        maximum_amount(capacity, rate, application.term_months) if rate and capacity > 0 else None
-    )
+    maximum = maximum_amount(capacity, rate, term) if rate and capacity > 0 else None
     comment = next(
         (e.details.get("comment") for e in reversed(application.events) if e.actor == Actor.BANK),
         None,
@@ -75,13 +92,13 @@ def decision_view(application: Application) -> DecisionResponse | None:
                 name=f.name,
                 points=float(Decimal(f.points).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)),
                 max_points=f.maximum,
-                explanation=f.explanation,
+                explanation=explanations.get(f.code, f.explanation),
             )
             for f in application.factors
         ],
         rate=float(rate) if rate is not None else None,
         approved_amount=application.offered_amount,
-        term_months=application.term_months,
+        term_months=term,
         monthly_payment=application.monthly_payment,
         total_payment=total,
         overpayment=application.overpayment,
@@ -100,6 +117,19 @@ def application_view(application: Application) -> ApplicationResponse:
     def entered(status):
         return next((e.occurred_at for e in application.events if e.to_status == status), None)
 
+    session = object_session(application)
+    workflow = session.get(ApplicationWorkflow, application.id) if session else None
+    documents = (
+        list(
+            session.scalars(
+                select(ApplicationDocument)
+                .where(ApplicationDocument.application_id == application.id)
+                .order_by(ApplicationDocument.id)
+            )
+        )
+        if session
+        else []
+    )
     return ApplicationResponse(
         id=application.id,
         status=application.status,
@@ -122,6 +152,15 @@ def application_view(application: Application) -> ApplicationResponse:
         signed_at=entered(Status.SIGNED),
         disbursed_at=entered(Status.DISBURSED),
         events=[EventResponse.model_validate(e) for e in application.events],
+        product_code=workflow.product_code if workflow else None,
+        requested_documents=[
+            {
+                "kind": kind,
+                "uploaded": any(d.kind == kind for d in documents),
+                "document_id": next((d.id for d in reversed(documents) if d.kind == kind), None),
+            }
+            for kind in (workflow.document_checklist if workflow else [])
+        ],
     )
 
 
@@ -133,7 +172,9 @@ def summary_view(application: Application) -> ApplicationSummary:
         created_at=application.created_at,
         company_name=application.company_snapshot["name"],
         requested_amount=application.requested_amount,
-        approved_amount=application.offered_amount,
+        approved_amount=None
+        if application.status in {Status.MANUAL_REVIEW, Status.INFO_REQUESTED}
+        else application.offered_amount,
         goal=application.goal,
     )
 

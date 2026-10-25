@@ -6,7 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
-from app.db.models import Application, ApplicationEvent, Company
+from app.db.models import Application, ApplicationEvent, Company, utc_now
+from app.db.products import PRODUCTS, Product
+from app.db.workflow_models import ApplicationWorkflow
 from app.domain.state_machine import Actor, Status, check_transition
 from app.schemas.applications import CreateApplication
 from app.schemas.companies import CompanyResponse
@@ -27,7 +29,8 @@ def transition(
     details: dict | None = None,
 ) -> None:
     check_transition(application.status, target, actor)
-    session.add(
+    # Журнал мог быть загружен для предыдущего решения: обновляем и коллекцию ответа.
+    application.events.append(
         ApplicationEvent(
             application_id=application.id,
             from_status=application.status,
@@ -68,6 +71,15 @@ def create_application(
     company = session.get(Company, payload.company.inn)
     if company is None:
         raise AppError(404, "COMPANY_NOT_FOUND", "В демо-реестре компания не найдена.")
+    code = payload.product_code or next(p["code"] for p in PRODUCTS if p["goal"] == payload.goal)
+    product = session.get(Product, code)
+    if product is None or product.goal != payload.goal:
+        raise AppError(422, "VALIDATION_ERROR", "Выбранный продукт не соответствует цели.")
+    if not (
+        product.min_amount <= payload.requested_amount <= product.max_amount
+        and product.min_term <= payload.term_months <= product.max_term
+    ):
+        raise AppError(422, "VALIDATION_ERROR", "Сумма или срок вне границ выбранного продукта.")
     application = Application(
         company_inn=payload.company.inn,
         company_snapshot=CompanyResponse.model_validate(company).model_dump(mode="json"),
@@ -80,6 +92,9 @@ def create_application(
     session.add(application)
     session.flush()
     session.add(
+        ApplicationWorkflow(application_id=application.id, product_code=code, consent_at=utc_now())
+    )
+    session.add(
         ApplicationEvent(
             application_id=application.id,
             from_status=None,
@@ -88,7 +103,13 @@ def create_application(
             details={"synthetic": True},
         )
     )
-    transition(session, application, Status.SUBMITTED, Actor.CLIENT)
+    transition(
+        session,
+        application,
+        Status.SUBMITTED,
+        Actor.CLIENT,
+        {"bki_consent": True, "product_code": code},
+    )
     session.commit()
     return application, True
 

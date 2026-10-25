@@ -1,6 +1,7 @@
 from decimal import Decimal, localcontext
 
 from app.domain.annuity import round_rubles
+from app.domain.formatting import percent, rubles, years
 from app.domain.types import CreditHistory, Factor, Goal, ScoringInput, ScoringResult
 
 
@@ -24,6 +25,15 @@ def calculate_score(data: ScoringInput) -> ScoringResult:
     with localcontext() as context:
         context.prec = 40
         history = {CreditHistory.EXCELLENT: 35, CreditHistory.FAIR: 20, CreditHistory.POOR: 0}
+        history_explanations = {
+            CreditHistory.EXCELLENT: (
+                "Прошлые кредиты гасились без просрочек — это главный плюс для банка."
+            ),
+            CreditHistory.FAIR: (
+                "В истории были небольшие просрочки — банк учитывает это осторожно."
+            ),
+            CreditHistory.POOR: "В истории есть серьёзные просрочки — это сильно снижает оценку.",
+        }
         load = debt_ratio(data)
         load_points = 30 * min(Decimal(1), max(Decimal(0), 1 - load / Decimal("0.25")))
         revenue_points = _tier(
@@ -47,14 +57,14 @@ def calculate_score(data: ScoringInput) -> ScoringResult:
                 "Кредитная история",
                 Decimal(history[data.credit_history]),
                 35,
-                "Своевременные платежи по прежним кредитам повышают оценку.",
+                history_explanations[data.credit_history],
             ),
             Factor(
                 "debt_load",
                 "Долговая нагрузка",
                 load_points,
                 30,
-                f"Текущие платежи составляют {load * 100:.2f}% месячной выручки; "
+                f"Текущие платежи составляют {percent(load * 100)} месячной выручки; "
                 "при нагрузке 25% и выше баллы не начисляются.",
             ),
             Factor(
@@ -62,14 +72,14 @@ def calculate_score(data: ScoringInput) -> ScoringResult:
                 "Годовая выручка",
                 Decimal(revenue_points),
                 20,
-                f"Выручка {data.annual_revenue:,} рублей определяет запас для платежей.",
+                f"Выручка {rubles(data.annual_revenue)} определяет запас для платежей.",
             ),
             Factor(
                 "business_age",
                 "Возраст бизнеса",
                 Decimal(age_points),
                 10,
-                f"Бизнес работает {data.business_age_years} лет; "
+                f"Бизнес работает {years(data.business_age_years)}; "
                 "более долгий срок повышает оценку.",
             ),
             Factor(
@@ -77,7 +87,7 @@ def calculate_score(data: ScoringInput) -> ScoringResult:
                 "Сумма к выручке",
                 Decimal(share_points),
                 5,
-                f"Запрашиваемая сумма составляет {share * 100:.2f}% годовой выручки.",
+                f"Запрашиваемая сумма составляет {percent(share * 100, 0)} годовой выручки.",
             ),
         )
         return ScoringResult(round_rubles(sum((f.points for f in factors), Decimal(0))), factors)

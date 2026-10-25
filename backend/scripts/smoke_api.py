@@ -76,6 +76,7 @@ def check_decision(detail: dict, case: dict) -> None:
 
 def run_case(base: str, case: dict, timeout: float) -> dict:
     payload = {key: case["input"][key] for key in ("requested_amount", "term_months", "goal")}
+    payload["consent"] = True
     _, payload["company"] = request(base, "/companies/lookup?inn=" + case["inn"])
     headers = {"Idempotency-Key": f"smoke-{uuid4()}"}
     status, created = request(base, "/applications", "POST", payload, headers)

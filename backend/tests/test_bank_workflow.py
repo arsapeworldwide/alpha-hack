@@ -124,4 +124,9 @@ def test_recheck_requires_scoring_and_manual_rejection_survives_restart(tmp_path
         assert (rejected["decision"]["decided_by"] == "bank") is True
     with authenticated_client(create_app(make_settings(tmp_path))) as client:
         saved = client.get(f"/api/applications/{created['id']}").json()
-        assert saved == rejected
+        assert saved == {
+            key: value
+            for key, value in rejected.items()
+            if key
+            not in {"system_recommendation", "waiting_minutes", "capacity_excess", "policy_rate"}
+        }

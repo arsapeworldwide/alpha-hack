@@ -6,6 +6,7 @@
 
 | Компонент | Версия | Использование | Лицензия | Тексты |
 |---|---|---|---|---|
+| alembic | 1.20.1 | runtime | MIT | [LICENSE](backend/third_party_licenses/alembic/1.20.1/licenses/LICENSE) |
 | annotated-types | 0.8.0 | runtime | MIT | [LICENSE](backend/third_party_licenses/annotated-types/0.8.0/licenses/LICENSE) |
 | anyio | 4.15.1 | runtime | MIT | [LICENSE](backend/third_party_licenses/anyio/4.15.1/licenses/LICENSE) |
 | attrs | 26.1.0 | dev/tests | MIT | [LICENSE](backend/third_party_licenses/attrs/26.1.0/licenses/LICENSE) |
@@ -21,13 +22,18 @@
 | iniconfig | 2.3.1 | dev/tests | MIT | [LICENSE](backend/third_party_licenses/iniconfig/2.3.1/licenses/LICENSE) |
 | jsonschema | 4.23.0 | dev/tests | MIT | [COPYING](backend/third_party_licenses/jsonschema/4.23.0/licenses/COPYING) |
 | jsonschema-specifications | 2025.9.1 | dev/tests | MIT | [COPYING](backend/third_party_licenses/jsonschema-specifications/2025.9.1/licenses/COPYING) |
+| Mako | 1.4.3 | runtime | MIT | [LICENSE](backend/third_party_licenses/mako/1.4.3/licenses/LICENSE) |
+| MarkupSafe | 3.0.4 | runtime | BSD-3-Clause | [LICENSE.txt](backend/third_party_licenses/markupsafe/3.0.4/licenses/LICENSE.txt) |
 | packaging | 26.3 | dev/tests | Apache-2.0 OR BSD-2-Clause | [LICENSE](backend/third_party_licenses/packaging/26.3/licenses/LICENSE), [LICENSE.APACHE](backend/third_party_licenses/packaging/26.3/licenses/LICENSE.APACHE), [LICENSE.BSD](backend/third_party_licenses/packaging/26.3/licenses/LICENSE.BSD) |
 | pluggy | 1.7.0 | dev/tests | MIT | [LICENSE](backend/third_party_licenses/pluggy/1.7.0/licenses/LICENSE) |
+| psycopg | 3.3.6 | runtime | LGPL-3.0-only | [LICENSE.txt](backend/third_party_licenses/psycopg/3.3.6/licenses/LICENSE.txt) |
+| psycopg-binary | 3.3.6 | runtime | LGPL-3.0-only | [LICENSE.txt](backend/third_party_licenses/psycopg-binary/3.3.6/licenses/LICENSE.txt) |
 | pydantic | 2.10.4 | runtime | MIT | [LICENSE](backend/third_party_licenses/pydantic/2.10.4/licenses/LICENSE) |
 | pydantic_core | 2.27.2 | runtime | MIT | [LICENSE](backend/third_party_licenses/pydantic-core/2.27.2/licenses/LICENSE) |
 | pydantic-settings | 2.7.0 | runtime | MIT | [LICENSE](backend/third_party_licenses/pydantic-settings/2.7.0/licenses/LICENSE) |
 | pytest | 8.3.4 | dev/tests | MIT | [LICENSE](backend/third_party_licenses/pytest/8.3.4/LICENSE) |
 | python-dotenv | 1.2.4 | runtime | BSD-3-Clause | [LICENSE](backend/third_party_licenses/python-dotenv/1.2.4/licenses/LICENSE) |
+| python-multipart | 0.0.32 | runtime | Apache-2.0 | [LICENSE.txt](backend/third_party_licenses/python-multipart/0.0.32/licenses/LICENSE.txt) |
 | PyYAML | 6.0.2 | dev/tests | MIT | [LICENSE](backend/third_party_licenses/pyyaml/6.0.2/LICENSE) |
 | referencing | 0.37.0 | dev/tests | MIT | [COPYING](backend/third_party_licenses/referencing/0.37.0/licenses/COPYING) |
 | rpds-py | 2026.9.1 | dev/tests | MIT | [LICENSE](backend/third_party_licenses/rpds-py/2026.9.1/licenses/LICENSE) |
@@ -35,12 +41,16 @@
 | SQLAlchemy | 2.0.36 | runtime | MIT | [LICENSE](backend/third_party_licenses/sqlalchemy/2.0.36/LICENSE) |
 | starlette | 0.41.3 | runtime | BSD-3-Clause | [LICENSE.md](backend/third_party_licenses/starlette/0.41.3/licenses/LICENSE.md) |
 | typing_extensions | 4.16.0 | runtime | PSF-2.0 | [LICENSE](backend/third_party_licenses/typing-extensions/4.16.0/licenses/LICENSE) |
+| tzdata | 2026.5 | runtime | Apache-2.0 | [LICENSE](backend/third_party_licenses/tzdata/2026.5/licenses/LICENSE), [LICENSE_APACHE](backend/third_party_licenses/tzdata/2026.5/licenses/licenses/LICENSE_APACHE) |
 | uvicorn | 0.34.0 | runtime | BSD-3-Clause | [LICENSE.md](backend/third_party_licenses/uvicorn/0.34.0/licenses/LICENSE.md) |
 
 ## Прочие компоненты
 
 - Python 3.12: PSF License и включённые upstream-уведомления официального образа Python.
 - SQLite: public domain; используется через стандартный модуль sqlite3.
+- PostgreSQL 16.15 (необязательный compose overlay): PostgreSQL License.
+  [COPYRIGHT](backend/third_party_licenses/postgresql/16.15/COPYRIGHT);
+  образ закреплён digest.
 - Swagger UI 5.17.14: Apache-2.0. Локальные JS/CSS скопированы без изменений;
   [LICENSE](backend/app/static/swagger/LICENSE),
   [NOTICE](backend/app/static/swagger/NOTICE),

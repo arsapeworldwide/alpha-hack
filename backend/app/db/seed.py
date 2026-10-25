@@ -10,6 +10,9 @@ SEGMENT_PRIORITY_START = 10
 
 
 def seed_database(session: Session) -> None:
+    from app.db.products import seed_products
+
+    seed_products(session)
     for company in (*COMPANIES, *REGISTRY_EXTRAS):
         if session.get(Company, company["inn"]) is None:
             session.add(Company(**company))

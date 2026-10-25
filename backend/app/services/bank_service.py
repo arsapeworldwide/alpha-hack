@@ -2,14 +2,13 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.core.errors import AppError
 from app.db.models import Application, utc_now
-from app.domain.annuity import loan_totals
 from app.domain.decision import three_months_later
-from app.domain.scoring import annual_rate
 from app.domain.state_machine import Actor, Status, check_transition
 from app.schemas.bank import BankDecisionRequest
 from app.services.application_service import get_application, transition
+from app.services.application_view import decision_view
+from app.services.offer_terms import apply_offer
 
 
 def review_application(
@@ -19,19 +18,41 @@ def review_application(
     reviewer: str = "legacy-bank-token",
 ) -> Application:
     application = get_application(session, application_id)
-    target = Status.APPROVED if payload.action == "approve" else Status.REJECTED
+    target = {
+        "approve": Status.APPROVED,
+        "counter": Status.COUNTER_OFFER,
+        "reject": Status.REJECTED,
+        "request_info": Status.INFO_REQUESTED,
+    }[payload.action]
     check_transition(application.status, target, Actor.BANK)
+    previous_view = decision_view(application)
     previous = {
         "status": application.status,
         "score": application.score,
         "annual_rate": str(application.rate) if application.rate is not None else None,
         "amount": application.offered_amount,
         "rejection_reason": application.rejection_reason,
+        "term_months": previous_view.term_months if previous_view else application.term_months,
+        "monthly_payment": application.monthly_payment,
     }
-    if target == Status.APPROVED:
-        approve_application(application)
-    else:
+    offer = None
+    if target in {Status.APPROVED, Status.COUNTER_OFFER}:
+        offer = apply_offer(
+            application,
+            payload.amount or application.requested_amount,
+            payload.term_months or application.term_months,
+            payload.comment,
+        )
+    elif target == Status.REJECTED:
         reject_application(application)
+    else:
+        from app.db.workflow_models import ApplicationWorkflow
+
+        workflow = session.get(ApplicationWorkflow, application.id)
+        if workflow is None:
+            workflow = ApplicationWorkflow(application_id=application.id)
+            session.add(workflow)
+        workflow.document_checklist = list(dict.fromkeys(payload.checklist))
     application.manual_decision = True
     application.updated_at = utc_now()
     transition(
@@ -44,39 +65,12 @@ def review_application(
             "comment": payload.comment,
             "reviewer": reviewer,
             "previous_decision": previous,
-            "offer": {
-                "amount": application.offered_amount,
-                "annual_rate": str(application.rate) if application.rate is not None else None,
-            },
+            "offer": offer,
+            "checklist": payload.checklist,
         },
     )
     session.commit()
     return application
-
-
-def approve_application(application: Application) -> None:
-    if application.score is None:
-        raise AppError(
-            409,
-            "BANK_SCORING_REQUIRED",
-            "Одобрение возможно после завершения проверок и расчёта скоринга.",
-        )
-    if application.score < 45:
-        raise AppError(
-            409,
-            "BANK_RATE_UNAVAILABLE",
-            "В SPEC не задана ставка для оценки ниже 45. Ручное одобрение недоступно.",
-        )
-    rate = annual_rate(application.score, application.goal)
-    amount = application.requested_amount
-    payment, _, overpayment = loan_totals(amount, rate, application.term_months)
-    application.rate = rate
-    application.offered_amount = amount
-    application.monthly_payment = payment
-    application.overpayment = overpayment
-    application.rejection_reason = None
-    application.recommendations = []
-    application.reapply_date = None
 
 
 def reject_application(application: Application) -> None:

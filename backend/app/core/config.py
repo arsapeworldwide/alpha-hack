@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     simulate_bki_failure: bool = False
     demo_mode: bool = True
     session_hours: int = Field(default=8, ge=1, le=24)
+    document_directory: str = "./data/documents"
     egrul_provider: Literal["simulator"] = "simulator"
     bki_provider: Literal["simulator"] = "simulator"
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:8080"]

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.staticfiles import StaticFiles
 
-from app.api import applications, auth, bank, companies, demo, feed, health
+from app.api import applications, auth, bank, companies, demo, documents, feed, health, products
 from app.core.config import Settings, get_settings
 from app.core.errors import ERROR_RESPONSES, install_error_handlers
 from app.core.logging import RequestIdMiddleware, configure_logging
@@ -64,6 +64,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         health.router,
         bank.router,
         auth.router,
+        products.router,
+        documents.router,
     ):
         api.include_router(router)
     app.include_router(api)

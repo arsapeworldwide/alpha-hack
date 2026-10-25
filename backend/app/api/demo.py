@@ -6,8 +6,10 @@ from app.api.access import CurrentUser, require_demo
 from app.api.dependencies import DbSession, PipelineDependency
 from app.db.access_models import DemoFailure
 from app.db.models import Application, Company
+from app.db.workflow_models import ApplicationDocument
 from app.schemas.auth import FailureSettings
-from app.schemas.companies import CompanyResponse, DemoProfileResponse
+from app.schemas.companies import DemoProfileResponse, RegistryCompanyResponse
+from app.services.documents import document_path
 
 router = APIRouter(tags=["demo"])
 
@@ -33,7 +35,7 @@ async def demo_profiles(session: DbSession, request: Request):
             id=code,
             label=f"{company.name} ({label})",
             risk_level=risk,
-            company=CompanyResponse.model_validate(company),
+            company=RegistryCompanyResponse.model_validate(company),
         )
         for inn, code, label, risk in profiles
         if (company := session.get(Company, inn))
@@ -48,9 +50,14 @@ async def reset_demo(
     async with pipeline.lock:
         await pipeline.cancel_all()
         count = session.scalar(select(func.count()).select_from(Application))
+        paths = list(session.scalars(select(ApplicationDocument.path)))
         session.execute(delete(Application))
         session.merge(DemoFailure(source="bki", mode="ok"))
         session.commit()
+        for filename in paths:
+            document_path(request.app.state.settings.document_directory, filename).unlink(
+                missing_ok=True
+            )
         return ResetResponse(removed_applications=count)
 
 
