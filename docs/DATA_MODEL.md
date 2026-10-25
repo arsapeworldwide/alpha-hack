@@ -5,6 +5,29 @@ erDiagram
     companies ||--o{ applications : "company_inn"
     applications ||--o{ application_events : "журнал"
     applications ||--o{ factors : "объяснение"
+    users ||--o{ memberships : "участник"
+    companies ||--o{ memberships : "доступ"
+    users ||--o{ login_sessions : "сессия"
+    users {
+        string login PK
+        string password_hash
+        string full_name
+        string role
+        bool is_demo
+    }
+    memberships {
+        string user_login PK,FK
+        string company_inn PK,FK
+    }
+    login_sessions {
+        string token_hash PK
+        string user_login FK
+        datetime expires_at
+    }
+    demo_failures {
+        string source PK
+        string mode
+    }
     companies {
         string inn PK
         string name

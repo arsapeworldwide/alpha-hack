@@ -3,13 +3,18 @@
 ```mermaid
 flowchart LR
     User[Предприниматель] --> Browser[Браузер]
-    Bank[Сотрудник банка] --> Swagger[Swagger /api/docs]
+    Bank[Сотрудник банка] --> Frontend
+    Bank -. альтернативный API .-> Swagger[Swagger /api/docs]
     Browser --> Frontend[React frontend :8080]
     Frontend --> Nginx[nginx: /api без изменения пути]
     Browser -. прямой доступ в демо .-> API[FastAPI /api :8000]
     Swagger --> API
     Nginx --> API
     API --> Service[Сервисы заявок и банковского рассмотрения]
+    API --> Access[Сессии и memberships: директор / бухгалтер / банк]
+    Access --> DB
+    API --> Controls[Демо-пульт БКИ: DEMO_MODE + права]
+    Controls --> DB
     Service --> DB[(SQLite /data/credit.db)]
     API --> Pipeline[asyncio pipeline: один процесс]
     Pipeline --> Egrul[ЕГРЮЛ: локальный симулятор]

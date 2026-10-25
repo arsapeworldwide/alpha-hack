@@ -1,6 +1,9 @@
 # Браузерная проверка
 
 Нужны работающий `docker compose up --build --wait`, Node 22.12+ и npm.
+Теперь API требует входа: общие прогоны используют auth-helpers.cjs и директорскую
+демо-сессию. `node roles-ui.cjs` проходит именно карточки входа в браузере:
+банк approve/reject, обновление у клиента, бухгалтер 403, изоляция компаний, БКИ и logout.
 Зависимости теста зафиксированы в package-lock.json отдельно от frontend/.
 Из этого каталога:
 
@@ -13,6 +16,10 @@ Windows использует установленный Microsoft Edge в headle
 На Linux/macOS сначала установите тестовый Chromium:
 `npx playwright install chromium`. При необходимости задайте PLAYWRIGHT_CHANNEL.
 UI_BASE_URL по умолчанию http://127.0.0.1:8080.
+
+Запись резервных видео: `npx playwright install ffmpeg`, затем из корня
+`RECORD_DEMO=1 node tests/e2e/smoke-ui.cjs` (PowerShell: `$env:RECORD_DEMO='1'`).
+Видео в artifacts/demo-*.webm, проверенные записи сохранены в docs/demo/.
 
 Тест кликает три демо-профиля, проходит одобрение/встречное/отказ, принятие,
 неверный код, подписание, выдачу, reload, историю и сброс. Проверяет реальные

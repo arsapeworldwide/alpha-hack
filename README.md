@@ -11,6 +11,8 @@ API адаптирован к контракту фронтенда. По выб
 Реализованы БД, seed, бизнес-логика, API и асинхронный конвейер.
 Docker-сборка, запуск, healthcheck и сохранение данных после перезапуска проверены.
 Банковская роль реализована. Три исхода проверены кликами в браузере через nginx.
+Добавлены вход, права директора/бухгалтера, изоляция компаний и рабочее место банка.
+Демо-пульт БКИ переключает сбой без рестарта; решение сотрудника появляется у клиента автоматически.
 Стек бэкенда: Python 3.12, FastAPI, SQLAlchemy, SQLite.
 Код и Dockerfile находятся в backend/. Корневой requirements.txt ссылается
 на backend/requirements.txt с точными версиями и хешами.
@@ -18,6 +20,9 @@ Docker-сборка, запуск, healthcheck и сохранение данн�
 - [Бриф](docs/BACKEND_BRIEF.md)
 - [Правила скоринга](docs/SCORING_SPEC.md)
 - [План и допущения](docs/BACKEND_PLAN.md)
+- [Вход, учётки и права](docs/P1_CONTRACT.md)
+- [Сценарий демонстрации](docs/DEMO_SCRIPT.md), [обоснование MVP](docs/MVP_DECISIONS.md)
+- [План реальных интервью](docs/CUSTDEV.md)
 - [Отфильтрованный список следующих изменений](docs/CHANGES_PRIORITIZED.md)
 - [API, экспортированный из FastAPI](docs/openapi.yaml)
 - [Состояние контракта](docs/API_CONTRACT.md)
@@ -49,6 +54,10 @@ docker compose up --build
 или http://localhost:8000/api/docs. Проверка: http://localhost:8080/api/health.
 Seed загружается автоматически, `.env` не обязателен: используются безопасные
 значения `.env.example`. SQLite хранится в именованном volume `backend_data`.
+На экране входа выберите «Директор демо-группы» для трёх кредитных сценариев,
+«Сотрудник банка» для очереди или «Бухгалтер Альфа Ритейл» для просмотра без подписи.
+Демо-пароль: `demo-credit-2026`. Учётки привязаны к компаниям; чужая заявка возвращает 404.
+Вход нужен и для прямых API-запросов; коллекция начинается с POST /api/auth/login.
 Перезапуск и обычный `docker compose down` сохраняют заявки.
 Запускаются frontend и backend, оба должны получить healthy. VITE_USE_MOCK=false
 задаётся по умолчанию в compose; VITE-переменные применяются во время сборки.
@@ -69,6 +78,6 @@ API и банковская роль дополнительно проверен
 GET /api/bank/applications. Для решения сотрудника используйте action/comment
 в POST /api/bank/applications/{id}/decision. Настройка — BANK_API_TOKEN через env.
 
-Проверки: 196 тестов Python, 63 теста фронтенда, ruff, ESLint и production build.
+Проверки: 208 тестов Python, 68 тестов фронтенда, ruff, ESLint и production build.
 В tests/e2e находятся браузерные проверки Playwright; инструкции — в README этого каталога.
 Изменения контракта и согласованное округление: [CONTRACT_CHANGES](docs/CONTRACT_CHANGES.md).

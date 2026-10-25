@@ -3,6 +3,8 @@
 Реализованы БД, синтетические данные, бизнес-логика, API и конвейер.
 При старте создаются таблицы и добавляется seed; Swagger доступен на `/api/docs`.
 Docker и банковская роль реализованы; API согласован с веткой frontend.
+В P1 добавлены Bearer-сессии, роли, доступ по компаниям и демо-пульт БКИ.
+Учётки и новые права: [P1_CONTRACT](../docs/P1_CONTRACT.md).
 
 Стек: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.x,
 SQLite с переключением через DATABASE_URL, pytest, httpx, ruff.
@@ -20,7 +22,7 @@ docker compose up --build
 Копировать `.env.example` не обязательно. Для своих настроек создайте `.env`
 в корне или задайте переменные окружения перед запуском compose.
 Сайт доступен на http://localhost:8080, работает в API-режиме по умолчанию.
-Исходники frontend/ не изменялись; compose включает его сборку и ожидание backend.
+Compose включает сборку frontend и ожидание backend; в P1 добавлены вход и экран банка.
 Пример интеграции nginx — [FRONTEND_INTEGRATION](../docs/FRONTEND_INTEGRATION.md).
 
 Образ собирается из backend/Dockerfile, устанавливает runtime requirements.txt
@@ -29,6 +31,7 @@ docker compose up --build
 /tmp — временная память. Healthcheck проверяет настоящий /api/health и доступ к БД.
 Volume сохраняет SQLite при пересоздании контейнера и обычном compose down.
 Для сброса заявок используйте POST /api/demo/reset — компании и лента сохранятся.
+Операция требует входа директором демо-группы или сотрудником банка и DEMO_MODE=true.
 
 Первичная сборка требует интернета для образа и Python-пакетов. После неё:
 `docker compose up --no-build --pull never` работает с локальным образом без сети интернет.
@@ -119,6 +122,8 @@ macOS / Linux:
 | BANK_API_TOKEN | demo-bank-token | Токен банковской роли |
 | PIPELINE_STEP_SECONDS | 1 | Пауза этапа, 0 в тестах |
 | SIMULATE_BKI_FAILURE | false | Сбой БКИ и статус NEEDS_RECHECK |
+| DEMO_MODE | true | Демо-учётки, карточки входа и пульт; false блокирует прежние демо-сессии |
+| SESSION_HOURS | 8 | Срок серверной сессии (1–24 часа) |
 | EGRUL_PROVIDER | simulator | Адаптер ЕГРЮЛ |
 | BKI_PROVIDER | simulator | Адаптер БКИ |
 | CORS_ORIGINS | localhost:5173 и localhost:8080 | JSON-массив разрешённых origin |
@@ -167,13 +172,13 @@ POST /api/demo/reset очищает заявки и сохраняет проф�
 Для сбоя задайте SIMULATE_BKI_FAILURE=true перед запуском: заявка остановится
 в NEEDS_RECHECK. Верните false и перезапустите процесс с той же БД — проверка продолжится.
 При запуске используйте один worker. Данные, ключи идемпотентности и лимит
-попыток подписания переживают перезапуск. История в демо общая для всех клиентов.
+попыток подписания переживают перезапуск. История доступна только участникам компании.
 
 ## Контракт и адаптеры
 
 Для экспорта схемы из backend/: `python -m scripts.export_openapi`.
 PyYAML и jsonschema нужны только для экспорта и контрактных тестов, в runtime-lock их нет.
-Все 13 операций, включая банковские и retry, включены в экспорт.
+Все 20 операций, включая auth, банковскую карточку и демо-пульт, включены в экспорт.
 Ответы проверяются также по исходному контракту docs/frontend/openapi.yaml.
 Провайдеры выбираются настройками EGRUL_PROVIDER и BKI_PROVIDER;
 для нового адаптера реализуйте соответствующий ABC и зарегистрируйте его
@@ -182,7 +187,9 @@ PyYAML и jsonschema нужны только для экспорта и конт
 
 ## Банковская роль и документация
 
-В Swagger нажмите Authorize и введите demo-bank-token (или BANK_API_TOKEN из env).
+В Swagger выполните POST /api/auth/login, затем Authorize → SessionToken и вставьте
+access_token. Для банка войдите underwriter, для клиента — director; пароль demo-credit-2026.
+Старый BankToken/demo-bank-token поддерживается только в DEMO_MODE=true.
 GET /api/bank/applications возвращает очередь с факторами; POST
 /api/bank/applications/{id}/decision принимает action=approve|reject и comment (до 500 символов).
 Без токена — 401. Комментарий виден в клиентском журнале, в логи не пишется.

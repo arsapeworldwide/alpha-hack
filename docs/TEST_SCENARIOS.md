@@ -1,5 +1,12 @@
 # Сценарии проверки
 
+P1: перед проверкой войдите как директор демо-группы (director / demo-credit-2026).
+Банк: underwriter, бухгалтер: accountant, тот же синтетический пароль.
+Проверки ролей, пульта и поток банка описаны в DEMO_SCRIPT.md и P1_CONTRACT.md.
+API без сессии даёт 401, чужая заявка — 404, подпись бухгалтера — 403.
+`tests/e2e/roles-ui.cjs` проверяет банк, живое обновление у клиента, права и БКИ.
+Резервные записи трёх исходов сохранены в docs/demo/.
+
 Все данные синтетические. Нужны Docker с Linux-контейнерами и Compose 2+.
 Из корня: `docker compose up --build --wait`, затем `docker compose ps` — healthy.
 Swagger: http://localhost:8000/api/docs. Материалы REST Client: api_collection/backend.http.
@@ -112,7 +119,7 @@ POST /api/demo/reset должен удалить заявки, события и
 Интерфейс и nginx проверены в Edge с реальным API. Три исхода, подпись, reload, reset и сбой БКИ прошли; см. tests/e2e/README.md.
 В Фазе 4 обновлённый образ также прошёл scripts/smoke_bank; после restart
 подтверждены сохранение ручных решений, ставок, платежей и аудита.
-Локальные pytest: 196 тестов прошли, ruff и полное сравнение OpenAPI прошли.
+Локальные pytest: 208 тестов прошли, ruff и полное сравнение OpenAPI прошли.
 Дополнительно оба HTTP-прогона прошли через отдельный nginx 1.30.6 из
 docker-compose.integration.yml: проверены /api, банковский токен, CORS,
 X-Request-ID, полное совпадение OpenAPI и локальные ресурсы Swagger.
