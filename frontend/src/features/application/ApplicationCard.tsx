@@ -27,12 +27,32 @@ export function ApplicationCard() {
       ? safetyMargin(company, form.requestedAmount, form.termMonths, form.goal, new Date().toISOString().slice(0, 10)).forecast.rate
       : null;
 
+  const status = application?.status;
+  const decision = application?.decision;
+  // Решение «закрыто», когда банк одобрил и клиенту осталось только подписать (встречное ждёт принятия)
+  const decided = status === 'APPROVED' || status === 'OFFER_ACCEPTED' || status === 'SIGNED' || status === 'DISBURSED';
+
+  const decisionText =
+    !decision || step < 4
+      ? 'Онлайн, за несколько секунд'
+      : decision.outcome === 'REJECTED'
+        ? `Отказ: ${decision.rejection_reason?.toLowerCase()}`
+        : `${decision.outcome === 'APPROVED' ? 'Одобрено' : 'Одобрено меньше'}: ${formatRubShort(decision.approved_amount ?? 0)} под ${decision.rate}%`;
+
   const items: JourneyItem[] = [
     { title: 'Компания', value: company?.name || 'Выберите или найдите по ИНН', state: stateFor(step, 1) },
     { title: 'Сумма и срок', value: step >= 2 ? `${formatRubShort(form.requestedAmount)} на ${formatMonths(form.termMonths)}` : 'Подберёте на следующем шаге', state: stateFor(step, 2) },
-    { title: 'Проверка банка', value: application && step === 3 ? STATUS_META[application.status].label : step > 3 ? 'Пройдена' : 'Реестр, кредитная история, скоринг', state: stateFor(step, 3) },
-    { title: 'Решение', value: application && step === 4 ? STATUS_META[application.status].label : 'Онлайн, за несколько секунд', state: stateFor(step, 4) },
+    { title: 'Проверка банка', value: status && step === 3 ? STATUS_META[status].label : step > 3 ? 'Пройдена' : 'Реестр, кредитная история, скоринг', state: stateFor(step, 3) },
+    { title: 'Решение', value: decisionText, state: decided ? 'done' : stateFor(step, 4) },
   ];
+  // После одобрения появляется последний пункт — подписание и деньги
+  if (step === 4 && decision && decision.outcome !== 'REJECTED') {
+    items.push({
+      title: 'Договор и деньги',
+      value: status === 'DISBURSED' ? 'Деньги на расчётном счёте' : status === 'SIGNED' ? 'Перечисляем деньги…' : status === 'COUNTER_OFFER' ? 'После принятия условий' : 'Подписание онлайн кодом',
+      state: status === 'DISBURSED' ? 'done' : decided ? 'current' : 'todo',
+    });
+  }
 
   return (
     <aside aria-labelledby="application-title" className="rounded-3xl border border-line p-6">

@@ -5,10 +5,13 @@ import { useState } from 'react';
 import { CalculatorStep } from './features/calculator/CalculatorStep';
 import { ApplicationCard } from './features/application/ApplicationCard';
 import { FeedPanel } from './features/feed/FeedPanel';
-import { PendingStep } from './features/pipeline/PendingStep';
+import { HistoryList } from './features/history/HistoryList';
+import { PipelineStep } from './features/pipeline/PipelineStep';
 import { ProfileStep } from './features/profile/ProfileStep';
+import { ResultStep } from './features/result/ResultStep';
 import { initials } from './lib/format';
 import { useStore } from './state/context';
+import { usePollApplication } from './state/usePollApplication';
 
 /** Служебная полоса демо-режима: честно говорит, что данные синтетические, и даёт сброс. */
 function DemoBar() {
@@ -52,6 +55,7 @@ function CompanyChip() {
 
 export default function App() {
   const { state } = useStore();
+  usePollApplication();
   return (
     <div className="flex min-h-screen flex-col">
       <DemoBar />
@@ -67,11 +71,16 @@ export default function App() {
           <div className="min-w-0">
             {state.step === 1 && <ProfileStep />}
             {state.step === 2 && <CalculatorStep />}
-            {state.step >= 3 && <PendingStep />}
+            {state.step === 3 && <PipelineStep />}
+            {state.step === 4 && <ResultStep />}
           </div>
           <div className="lg:sticky lg:top-8">
             <ApplicationCard />
           </div>
+        </div>
+
+        <div className="mt-24">
+          <HistoryList />
         </div>
 
         <div className="mt-24">

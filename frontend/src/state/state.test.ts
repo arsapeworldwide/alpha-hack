@@ -58,6 +58,18 @@ describe('reducer', () => {
     expect(s.applicationId).toBeNull();
   });
 
+  it('открытие заявки из истории подставляет её компанию, условия и шаг', () => {
+    const full = {
+      id: 'app_old', status: 'COUNTER_OFFER', company: DEMO_PROFILES[1].company,
+      requested_amount: 10_000_000, term_months: 24, goal: 'equipment',
+    } as Application;
+    const s = reducer(initialState, { type: 'OPEN_APPLICATION', application: full });
+    expect(s.step).toBe(4);
+    expect(s.applicationId).toBe('app_old');
+    expect(s.company?.name).toBe('ИП Иванов');
+    expect(s.form).toEqual({ requestedAmount: 10_000_000, termMonths: 24, goal: 'equipment' });
+  });
+
   it('лента: сегмент компании, после отказа — режим rejected', () => {
     expect(feedQuery(initialState)).toEqual({ segment: 'general', context: 'default' });
     let s = reducer(initialState, { type: 'SELECT_PROFILE', profile: DEMO_PROFILES[2] });

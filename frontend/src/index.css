@@ -93,6 +93,39 @@ dialog.modal[open] {
   animation: modal-in 0.2s ease-out;
 }
 
+/* Активный этап конвейера: бегущий блик по тексту */
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+.shimmer-text {
+  background: linear-gradient(90deg, var(--color-muted) 40%, var(--color-ink) 50%, var(--color-muted) 60%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Галочка этапа появляется с лёгким «щелчком» */
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  70% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.stage-done {
+  animation: pop 0.35s ease-out both;
+}
+
+/* Выдача кредита: один выразительный момент на весь сценарий */
+@keyframes success-ring {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.success-mark {
+  animation: success-ring 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
 /* Уважаем настройку «уменьшить движение» в системе пользователя */
 @media (prefers-reduced-motion: reduce) {
   *,

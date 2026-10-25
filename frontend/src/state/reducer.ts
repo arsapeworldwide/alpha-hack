@@ -32,6 +32,7 @@ export type Action =
   | { type: 'SET_FORM'; patch: Partial<FormState> }
   | { type: 'GO_TO_STEP'; step: Step }
   | { type: 'APPLICATION_RECEIVED'; application: Application }
+  | { type: 'OPEN_APPLICATION'; application: Application }
   | { type: 'START_OVER' }
   | { type: 'RESET_ALL' };
 
@@ -83,6 +84,20 @@ export function reducer(state: AppState, action: Action): AppState {
       if (state.applicationId && state.applicationId !== application.id) return state;
       const step = stepForStatus(application.status) ?? state.step;
       return { ...state, applicationId: application.id, application, step };
+    }
+
+    case 'OPEN_APPLICATION': {
+      // Открыть заявку из «Моих заявок»: подставляем её компанию и условия, шаг — по статусу
+      const { application } = action;
+      return {
+        ...state,
+        profileId: null,
+        company: application.company,
+        form: { requestedAmount: application.requested_amount, termMonths: application.term_months, goal: application.goal },
+        applicationId: application.id,
+        application,
+        step: stepForStatus(application.status) ?? 4,
+      };
     }
 
     case 'START_OVER':
