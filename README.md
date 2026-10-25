@@ -1,6 +1,6 @@
 # Умный кредитный кабинет предпринимателя
 
-Фронтенд из origin/frontend и бэкенд объединены в integration/frontend-backend.
+Фронтенд из origin/frontend и бэкенд объединены и опубликованы в main.
 API адаптирован к контракту фронтенда; исходники frontend/ перенесены без правок.
 По умолчанию интерфейс работает с настоящим сервером, а не браузерным мок-сервером.
 
@@ -22,6 +22,7 @@ Docker-сборка, запуск, healthcheck и сохранение данн�
 - [Уточнения API](docs/CONTRACT_CHANGES.md)
 - [Ограничения и развитие](docs/REVIEW_NOTES.md)
 - [Интеграция фронтенда и nginx](docs/FRONTEND_INTEGRATION.md)
+- [Публичная ссылка для демонстрации](docs/PUBLIC_DEMO.md)
 - [Сценарии для жюри](docs/TEST_SCENARIOS.md)
 - [Коллекция запросов](docs/api_collection/backend.http)
 - [Архитектура](docs/ARCHITECTURE.md), [состояния](docs/APPLICATION_STATES.md), [данные](docs/DATA_MODEL.md)

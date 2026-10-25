@@ -55,6 +55,8 @@
   [Лицензии и notices](tests/e2e/licenses/); версии — tests/e2e/package-lock.json.
 - Компоненты фронтенда и их лицензии:
   [исходное уведомление](docs/frontend/THIRD_PARTY_NOTICES.md).
+- cloudflared 2026.10.3: Apache-2.0; отдельный контейнер временной публикации.
+  [Исходники и лицензия](https://github.com/cloudflare/cloudflared/blob/2026.10.3/LICENSE).
 
 ## Смоделированные интеграции
 
