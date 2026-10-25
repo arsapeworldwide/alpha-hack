@@ -15,12 +15,12 @@ class MemoryStorage {
 }
 
 describe('reducer', () => {
-  it('выбор профиля подставляет компанию; ручная правка снимает отметку профиля', () => {
+  it('выбор профиля подставляет компанию; ручная правка меняет данные, профиль остаётся выбранным', () => {
     let s = reducer(initialState, { type: 'SELECT_PROFILE', profile: alfa });
     expect(s.company?.inn).toBe('7712345678');
     expect(s.profileId).toBe('alfa-retail');
     s = reducer(s, { type: 'UPDATE_COMPANY', patch: { annual_revenue: 1 } });
-    expect(s.profileId).toBeNull();
+    expect(s.profileId).toBe('alfa-retail');
     expect(s.company?.annual_revenue).toBe(1);
   });
 

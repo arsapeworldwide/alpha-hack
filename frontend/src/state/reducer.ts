@@ -63,8 +63,8 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'UPDATE_COMPANY':
       if (!state.company) return state;
-      // Правка карточки вручную — это уже не «чистый» демо-профиль
-      return { ...state, profileId: null, company: { ...state.company, ...action.patch } };
+      // Профиль остаётся выбранным: список показывает изменённые данные с пометкой «Изменено»
+      return { ...state, company: { ...state.company, ...action.patch } };
 
     case 'SET_FORM':
       return { ...state, form: normalizeForm({ ...state.form, ...action.patch }) };
