@@ -22,6 +22,7 @@ export interface SafetyMargin {
 }
 
 export function safetyMargin(company: Company, requestedAmount: number, termMonths: number, goal: Goal, today: string): SafetyMargin {
+  if (company.monthly_payments === null) throw new Error('Дождитесь проверки БКИ.');
   const forecast = evaluate({ company, requestedAmount, termMonths, goal }, today);
   // Если банк ставку не назначит (score < 45), показываем платёж по базовой ставке цели
   const rate = forecast.rate ?? BASE_RATE[goal];

@@ -4,7 +4,7 @@ import { formatRubShort, initials } from '../../lib/format';
 import { useStore } from '../../state/context';
 import { useAuth } from '../auth/context';
 import { USE_MOCK } from '../../api/client';
-import { riskLevel, type RiskLevel } from './riskLevel';
+import { type RiskLevel } from './riskLevel';
 
 const RISK: Record<RiskLevel, { text: string; color: string }> = {
   ideal: { text: 'Надёжный', color: 'text-success' },
@@ -35,7 +35,7 @@ export function DemoProfiles() {
         if (!p) return <div key={i} className="h-[76px] animate-pulse bg-surface/60" />;
         const selected = state.profileId === p.id;
         const company = p.company;
-        const risk = RISK[riskLevel(company)];
+        const risk = RISK[p.risk_level];
         return (
           <button
             key={p.id}

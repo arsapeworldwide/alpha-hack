@@ -1,7 +1,7 @@
 import type { Decision } from '../../api/types';
 
 /** «Что повлияло на решение»: пять факторов скоринга полосками с пояснением простым языком. */
-export function FactorList({ decision }: { decision: Decision }) {
+export function FactorList({ decision }: { decision: Pick<Decision, 'score' | 'factors'> }) {
   const score = decision.score;
   const rating = score === null ? '—' : score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 45 ? 'C' : 'D';
   return (

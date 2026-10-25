@@ -20,12 +20,13 @@ export function validateCompany(c: Company): FieldError | null {
   if (innError) return innError;
   if (!c.name.trim()) return { field: 'name', message: 'Укажите название компании.' };
   if (!Number.isInteger(c.annual_revenue) || c.annual_revenue < 1) return { field: 'annual_revenue', message: 'Укажите годовую выручку в рублях.' };
-  if (!Number.isInteger(c.monthly_payments) || c.monthly_payments < 0) return { field: 'monthly_payments', message: 'Платежи по кредитам не могут быть отрицательными.' };
+  if (c.monthly_payments !== null && (!Number.isInteger(c.monthly_payments) || c.monthly_payments < 0)) return { field: 'monthly_payments', message: 'Платежи по кредитам не могут быть отрицательными.' };
   if (!Number.isInteger(c.business_age_years) || c.business_age_years < 0 || c.business_age_years > 100) return { field: 'business_age_years', message: 'Возраст бизнеса — от 0 до 100 лет.' };
   return null;
 }
 
 export function validateApplication(body: ApplicationCreate): FieldError | null {
+  if (body.consent === false) return { field: 'consent', message: 'Подтвердите согласие на запрос в БКИ.' };
   const companyError = validateCompany(body.company);
   if (companyError) return companyError;
   const { requested_amount: amount, term_months: term, goal } = body;

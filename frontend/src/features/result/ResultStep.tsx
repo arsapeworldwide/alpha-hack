@@ -6,12 +6,15 @@ import { formatDate, formatRub } from '../../lib/format';
 import { useStore } from '../../state/context';
 import { OfferSummary } from './OfferSummary';
 import { Approved, CounterOffer, Rejected } from './Outcomes';
+import { DocumentsStep } from '../documents/DocumentsStep';
 
 /** Шаг 4. Решение и всё, что после него: подписание и выдача. Экран выбирается по статусу заявки. */
 export function ResultStep() {
   const { state, dispatch } = useStore();
   const app = state.application;
   const decision = app?.decision;
+  if (app?.status === 'INFO_REQUESTED') return <DocumentsStep app={app} />;
+  if (app?.status === 'MANUAL_REVIEW') return <StepHeading title="Заявку рассматривает специалист" lead="Сейчас ход за сотрудником банка. Решение появится здесь автоматически; страницу можно не обновлять." />;
   if (!app || !decision) return <StepHeading title="Загружаем решение…" />;
 
   switch (app.status) {

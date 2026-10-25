@@ -22,11 +22,13 @@ const HISTORY_POINTS: Record<CreditHistory, number> = { excellent: 35, fair: 20,
 
 /** d = текущие платежи / месячная выручка. */
 export function debtRatio(company: Company): number {
+  if (company.monthly_payments === null) throw new Error('Дождитесь проверки БКИ.');
   return company.monthly_payments / (company.annual_revenue / 12);
 }
 
 /** Платёжная способность: 25% месячной выручки минус текущие платежи. */
 export function paymentCapacity(company: Company): number {
+  if (company.monthly_payments === null) throw new Error('Дождитесь проверки БКИ.');
   return DEBT_LIMIT * (company.annual_revenue / 12) - company.monthly_payments;
 }
 
@@ -65,6 +67,7 @@ const HISTORY_TEXT: Record<CreditHistory, string> = {
 /** Пять факторов скоринга с баллами и пояснением простым языком. */
 export function scoreFactors(input: ScoringInput): Factor[] {
   const { company, requestedAmount } = input;
+  if (company.credit_history === null) throw new Error('Дождитесь проверки БКИ.');
   const d = debtRatio(company);
   const q = requestedAmount / company.annual_revenue;
   const debt = 30 * clamp(1 - d / DEBT_LIMIT, 0, 1);

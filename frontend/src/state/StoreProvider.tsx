@@ -18,7 +18,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!state.applicationId || state.application) return;
     api
       .getApplication(state.applicationId)
-      .then((application) => dispatch({ type: 'APPLICATION_RECEIVED', application }))
+      .then((application) => dispatch({ type: 'APPLICATION_RECEIVED', application, forApplicationId: state.applicationId! }))
       .catch(() => dispatch({ type: 'START_OVER' })); // заявки больше нет (например, после сброса)
   }, [state.applicationId, state.application]);
 

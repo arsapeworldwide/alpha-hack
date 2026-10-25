@@ -36,6 +36,7 @@ async function main() {
     }
     await page.getByRole('radio', { name: /Вектор/ }).click();
     await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await page.getByRole('checkbox', { name: /Даю согласие на запрос кредитной истории/ }).check();
     await page.getByRole('button', { name: 'Отправить заявку', exact: true }).click();
     await page.getByRole('heading', { name: 'Сейчас не можем одобрить кредит', exact: true }).waitFor({ timeout: 20000 });
     const rejected = await (await context.request.get(`${base}/api/feed?segment=production&context=rejected`)).json();

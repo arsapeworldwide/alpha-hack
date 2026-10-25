@@ -25,7 +25,7 @@ export function ApplicationCard() {
   const companyError = company ? validateCompany(company) : null;
   // Ставка по прогнозу (те же правила, что у банка); null — при таких данных банк откажет и ставку не назначит
   const forecastRate =
-    step === 2 && company && !companyError
+    step === 2 && state.bkiConsent && company && company.monthly_payments !== null && company.credit_history !== null && !companyError
       ? safetyMargin(company, form.requestedAmount, form.termMonths, form.goal, new Date().toISOString().slice(0, 10)).forecast.rate
       : null;
 
@@ -73,6 +73,7 @@ export function ApplicationCard() {
       {step === 2 && (
         <div className="mt-6 border-t border-line pt-6">
           <PaymentPreview amount={form.requestedAmount} termMonths={form.termMonths} rate={forecastRate ?? BASE_RATE[form.goal]} rateIsForecast={forecastRate !== null} />
+          <label className="mt-5 flex items-start gap-3 text-sm"><input type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={state.bkiConsent} onChange={e => dispatch({ type: 'SET_BKI_CONSENT', consent: e.target.checked })} />Даю согласие на запрос кредитной истории в БКИ для этой заявки</label>
           {(invalid || error) && company && <p className="mt-4 rounded-xl bg-[#fde6e4] px-4 py-3 text-sm text-accent-dark" role="alert">{invalid?.message ?? error}</p>}
           <Button size="lg" block className="mt-6" loading={sending} disabled={Boolean(invalid) || user.role !== 'client_owner'} onClick={() => void submit()}>
             Отправить заявку

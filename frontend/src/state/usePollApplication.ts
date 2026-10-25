@@ -21,7 +21,7 @@ export function usePollApplication(): void {
       inFlight.current = true;
       api
         .getApplication(id)
-        .then((application) => dispatch({ type: 'APPLICATION_RECEIVED', application }))
+        .then((application) => dispatch({ type: 'APPLICATION_RECEIVED', application, forApplicationId: id }))
         .catch(() => undefined) // временная ошибка сети — попробуем на следующем тике
         .finally(() => {
           inFlight.current = false;

@@ -29,6 +29,7 @@ async function main() {
   async function submit(page, company) {
     await page.getByRole('radio', { name: new RegExp(company) }).click();
     await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
+    await page.getByRole('checkbox', { name: /Даю согласие на запрос кредитной истории/ }).check();
     const [response] = await Promise.all([
       page.waitForResponse(r => r.url().endsWith('/api/applications') && r.request().method() === 'POST'),
       page.getByRole('button', { name: 'Отправить заявку', exact: true }).click(),

@@ -15,6 +15,15 @@ class MemoryStorage {
 }
 
 describe('reducer', () => {
+  it('поздний ответ опроса не возвращает старую заявку после изменения условий', () => {
+    let state = reducer(initialState, { type: 'SELECT_PROFILE', profile: alfa });
+    state = reducer(state, { type: 'APPLICATION_RECEIVED', application: app('APPROVED') });
+    state = reducer(state, { type: 'EDIT_CONDITIONS' });
+    const result = reducer(state, { type: 'APPLICATION_RECEIVED', application: app('APPROVED'), forApplicationId: 'app_1' });
+    expect(result).toEqual(state);
+    expect(result.step).toBe(2);
+    expect(result.applicationId).toBeNull();
+  });
   it('выбор профиля подставляет компанию; ручная правка меняет данные, профиль остаётся выбранным', () => {
     let s = reducer(initialState, { type: 'SELECT_PROFILE', profile: alfa });
     expect(s.company?.inn).toBe('7712345678');

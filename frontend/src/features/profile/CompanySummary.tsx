@@ -1,6 +1,6 @@
-import { CREDIT_HISTORY_LABELS, SEGMENT_NAMES } from '../../api/labels';
+import { SEGMENT_NAMES } from '../../api/labels';
 import type { Company } from '../../api/types';
-import { formatRub } from '../../lib/format';
+import { formatRub, plural } from '../../lib/format';
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1);
 
@@ -8,9 +8,7 @@ const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1);
 export function CompanySummary({ company }: { company: Company }) {
   const facts = [
     ['Выручка за год', formatRub(company.annual_revenue)],
-    ['Платежи по кредитам', `${formatRub(company.monthly_payments)} в мес.`],
-    ['Кредитная история', CREDIT_HISTORY_LABELS[company.credit_history]],
-    ['В бизнесе', `${company.business_age_years} ${company.business_age_years === 1 ? 'год' : company.business_age_years < 5 && company.business_age_years > 1 ? 'года' : 'лет'}`],
+    ['В бизнесе', `${company.business_age_years} ${plural(company.business_age_years, ['год', 'года', 'лет'])}`],
     ['Сфера', capitalize(SEGMENT_NAMES[company.segment])],
     ['ИНН', company.inn],
   ];
@@ -29,7 +27,7 @@ export function CompanySummary({ company }: { company: Company }) {
             </div>
           ))}
         </dl>
-      <p className="mt-4 text-sm text-muted">Источники: реквизиты, выручка и возраст — демо-реестр; кредитная история и платежи — симулятор БКИ. Все данные синтетические. Изменить показатели вручную нельзя.</p>
+      <p className="mt-4 text-sm text-muted">БКИ: кредитная история и платежи будут запрошены после вашего согласия и отправки заявки. Здесь показаны только синтетические данные реестра.</p>
     </section>
   );
 }

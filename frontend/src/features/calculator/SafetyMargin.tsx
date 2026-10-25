@@ -14,6 +14,7 @@ export function SafetyMarginPanel() {
   const { state, dispatch } = useStore();
   const { company, form } = state;
   if (!company || company.annual_revenue <= 0) return null;
+  if (!state.bkiConsent || company.monthly_payments === null || company.credit_history === null) return <p className="rounded-2xl bg-surface p-5 text-muted">Запас прочности оценим после получения БКИ. Текущие кредиты банк проверит при обработке заявки с вашего согласия.</p>;
 
   const today = new Date().toISOString().slice(0, 10);
   const m = safetyMargin(company, form.requestedAmount, form.termMonths, form.goal, today);

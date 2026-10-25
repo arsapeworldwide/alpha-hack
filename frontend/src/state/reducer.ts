@@ -15,6 +15,7 @@ export interface FormState {
 }
 
 export interface AppState {
+  bkiConsent: boolean;
   step: Step;
   /** Выбранный демо-профиль (null — ручной ввод) */
   profileId: string | null;
@@ -26,18 +27,20 @@ export interface AppState {
 }
 
 export type Action =
+  | { type: 'SET_BKI_CONSENT'; consent: boolean }
   | { type: 'SELECT_PROFILE'; profile: DemoProfile }
   | { type: 'SET_COMPANY'; company: Company | null }
   | { type: 'UPDATE_COMPANY'; patch: Partial<Company> }
   | { type: 'SET_FORM'; patch: Partial<FormState> }
   | { type: 'GO_TO_STEP'; step: Step }
-  | { type: 'APPLICATION_RECEIVED'; application: Application }
+  | { type: 'APPLICATION_RECEIVED'; application: Application; forApplicationId?: string }
   | { type: 'OPEN_APPLICATION'; application: Application }
   | { type: 'EDIT_CONDITIONS' }
   | { type: 'START_OVER' }
   | { type: 'RESET_ALL' };
 
 export const initialState: AppState = {
+  bkiConsent: false,
   step: 1,
   profileId: null,
   company: null,
@@ -48,6 +51,7 @@ export const initialState: AppState = {
 
 /** Для кассового разрыва срок не больше 12 месяцев — подрезаем автоматически. */
 function normalizeForm(form: FormState): FormState {
+  if (form.goal === 'cash_gap' && form.requestedAmount > 5000000) form = { ...form, requestedAmount: 5000000 };
   if (form.goal === 'cash_gap' && form.termMonths > CASH_GAP_MAX_TERM) {
     return { ...form, termMonths: CASH_GAP_MAX_TERM };
   }
@@ -56,11 +60,13 @@ function normalizeForm(form: FormState): FormState {
 
 export function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
+    case 'SET_BKI_CONSENT':
+      return { ...state, bkiConsent: action.consent };
     case 'SELECT_PROFILE':
-      return { ...state, profileId: action.profile.id, company: { ...action.profile.company } };
+      return { ...state, profileId: action.profile.id, company: { ...action.profile.company }, bkiConsent: false };
 
     case 'SET_COMPANY':
-      return { ...state, profileId: null, company: action.company };
+      return { ...state, profileId: null, company: action.company, bkiConsent: false };
 
     case 'UPDATE_COMPANY':
       if (!state.company) return state;
@@ -80,6 +86,7 @@ export function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'APPLICATION_RECEIVED': {
+      if (action.forApplicationId !== undefined && state.applicationId !== action.forApplicationId) return state;
       const { application } = action;
       // Игнорируем ответ по старой заявке, если пользователь уже начал новую
       if (state.applicationId && state.applicationId !== application.id) return state;
@@ -103,10 +110,10 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'EDIT_CONDITIONS':
       // «Назад» с проверки или решения: компания и условия сохраняются, текущая заявка остаётся в истории
-      return { ...state, step: state.company ? 2 : 1, applicationId: null, application: null };
+      return { ...state, step: state.company ? 2 : 1, applicationId: null, application: null, bkiConsent: false };
 
     case 'START_OVER':
-      return { ...state, step: 1, applicationId: null, application: null };
+      return { ...state, step: 1, applicationId: null, application: null, bkiConsent: false };
 
     case 'RESET_ALL':
       return initialState;

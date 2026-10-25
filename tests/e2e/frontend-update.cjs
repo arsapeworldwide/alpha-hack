@@ -33,6 +33,7 @@ async function main() {
     await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
 
     async function submit() {
+      await page.getByRole('checkbox', { name: /Даю согласие на запрос кредитной истории/ }).check();
       const [response] = await Promise.all([
         page.waitForResponse(r => r.url().endsWith('/api/applications') && r.request().method() === 'POST'),
         page.getByRole('button', { name: 'Отправить заявку', exact: true }).click(),

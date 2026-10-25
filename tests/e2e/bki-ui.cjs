@@ -22,7 +22,8 @@ async function main() {
     if (mode === 'fail') {
       await page.getByRole('radio', { name: /Альфа Ритейл/ }).click();
       await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
-      await page.getByRole('button', { name: 'Отправить заявку', exact: true }).click();
+      await page.getByRole('checkbox', { name: /Даю согласие на запрос кредитной истории/ }).check();
+    await page.getByRole('button', { name: 'Отправить заявку', exact: true }).click();
       await page.getByRole('heading', { name: 'Нужна повторная проверка', exact: true }).waitFor();
       const [response] = await Promise.all([
         page.waitForResponse(r => r.url().endsWith('/retry') && r.request().method() === 'POST'),

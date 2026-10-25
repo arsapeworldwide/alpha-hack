@@ -1,7 +1,7 @@
 // Реализация CreditApi через fetch к настоящему FastAPI (контракт — docs/openapi.yaml).
 
 import type { CreditApi } from './client';
-import { ApiError, type ErrorBody } from './types';
+import { ApiError, type ErrorBody, type Company, type DemoProfile } from './types';
 import { sessionToken } from './sessionApi';
 
 const TIMEOUT_MS = 10_000;
@@ -35,10 +35,11 @@ export function createHttpApi(baseUrl: string): CreditApi {
   }
 
   const id = (value: string) => encodeURIComponent(value);
+  const registryCompany = (company: Company): Company => ({ ...company, monthly_payments: company.monthly_payments ?? null, credit_history: company.credit_history ?? null });
 
   return {
-    getDemoProfiles: () => request('GET', '/demo-profiles'),
-    lookupCompany: (inn) => request('GET', `/companies/lookup?inn=${encodeURIComponent(inn)}`),
+    getDemoProfiles: async () => (await request<DemoProfile[]>('GET', '/demo-profiles')).map(profile => ({ ...profile, company: registryCompany(profile.company) })),
+    lookupCompany: async (inn) => registryCompany(await request<Company>('GET', `/companies/lookup?inn=${encodeURIComponent(inn)}`)),
     createApplication: (body, key) => request('POST', '/applications', body, { 'Idempotency-Key': key }),
     listApplications: () => request('GET', '/applications'),
     getApplication: (appId) => request('GET', `/applications/${id(appId)}`),

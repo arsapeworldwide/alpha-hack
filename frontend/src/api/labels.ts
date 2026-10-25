@@ -6,6 +6,8 @@ import type { ApplicationStatus, FeedSegment, Goal, Segment, StageCode } from '.
 export type Tone = 'success' | 'warning' | 'danger' | 'neutral' | 'info';
 
 export const STATUS_META: Record<ApplicationStatus, { label: string; tone: Tone; hint: string }> = {
+  MANUAL_REVIEW: { label: 'Рассмотрение специалистом', tone: 'info', hint: 'Сейчас ход за сотрудником банка.' },
+  INFO_REQUESTED: { label: 'Нужны документы', tone: 'warning', hint: 'Сейчас ваш ход: загрузите запрошенные документы.' },
   DRAFT: { label: 'Черновик', tone: 'neutral', hint: 'Заполните данные и отправьте заявку.' },
   SUBMITTED: { label: 'Заявка отправлена', tone: 'info', hint: 'Банк принял заявку и начинает проверки.' },
   CHECKING_EGRUL: { label: 'Проверка в ЕГРЮЛ', tone: 'info', hint: 'Сверяем реквизиты компании с госреестром.' },

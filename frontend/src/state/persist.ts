@@ -6,10 +6,11 @@ import { initialState, type AppState, type Step } from './reducer';
 // Старые черновики могли содержать вручную изменённые показатели компании.
 export const UI_KEY = 'credit-cabinet:ui:v2';
 
-type Saved = Pick<AppState, 'step' | 'profileId' | 'company' | 'form' | 'applicationId'>;
+type Saved = Pick<AppState, 'step' | 'profileId' | 'company' | 'form' | 'applicationId' | 'bkiConsent'>;
 
 export function saveState(storage: KeyValueStorage, state: AppState, login?: string): void {
   const saved: Saved = {
+    bkiConsent: state.bkiConsent,
     step: state.step,
     profileId: state.profileId,
     company: state.company,
@@ -39,6 +40,7 @@ export function loadState(storage: KeyValueStorage, login?: string): AppState {
     const step: Step = saved.step >= 3 && !applicationId ? (saved.company ? 2 : 1) : saved.step;
     return {
       ...initialState,
+      bkiConsent: saved.bkiConsent === true,
       step,
       profileId: saved.profileId ?? null,
       company: saved.company ?? null,

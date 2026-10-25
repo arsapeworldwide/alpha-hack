@@ -17,7 +17,8 @@ export function useSubmitApplication(): { submit: () => Promise<void>; sending: 
     setError(null);
   }, [form, company]);
 
-  const body = company ? { company, requested_amount: form.requestedAmount, term_months: form.termMonths, goal: form.goal } : null;
+  const codes = { working_capital: 'WORKING_CAPITAL', equipment: 'INVEST', cash_gap: 'OVERDRAFT' };
+  const body = company ? { company, requested_amount: form.requestedAmount, term_months: form.termMonths, goal: form.goal, consent: state.bkiConsent, product_code: codes[form.goal] } : null;
   const invalid = body ? validateApplication(body) : { field: 'company', message: 'Сначала выберите компанию.' };
 
   async function submit() {

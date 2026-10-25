@@ -17,7 +17,9 @@ export type ApplicationStatus =
   | 'OFFER_ACCEPTED'
   | 'SIGNED'
   | 'DISBURSED'
-  | 'NEEDS_RECHECK';
+  | 'NEEDS_RECHECK'
+  | 'MANUAL_REVIEW'
+  | 'INFO_REQUESTED';
 
 export type DecisionOutcome = 'APPROVED' | 'COUNTER_OFFER' | 'REJECTED';
 
@@ -27,8 +29,8 @@ export interface Company {
   /** Выручка за год, ₽ */
   annual_revenue: number;
   /** Текущие платежи по кредитам, ₽/мес */
-  monthly_payments: number;
-  credit_history: CreditHistory;
+  monthly_payments: number | null;
+  credit_history: CreditHistory | null;
   business_age_years: number;
   segment: Segment;
 }
@@ -41,6 +43,8 @@ export interface DemoProfile {
 }
 
 export interface ApplicationCreate {
+  consent?: boolean;
+  product_code?: string;
   company: Company;
   requested_amount: number;
   term_months: number;
@@ -89,6 +93,8 @@ export interface Decision {
 }
 
 export interface Application {
+  product_code?: string | null;
+  requested_documents?: { kind: string; uploaded: boolean; document_id: number | null }[];
   events?: { occurred_at: string; from_status: string | null; to_status: string; actor: string; details: Record<string, unknown> }[];
   id: string;
   status: ApplicationStatus;

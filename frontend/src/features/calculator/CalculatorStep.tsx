@@ -14,6 +14,7 @@ export function CalculatorStep() {
   const { company, form } = state;
   if (!company) return null;
   const maxTerm = form.goal === 'cash_gap' ? CASH_GAP_MAX_TERM : TERM_LIMITS.max;
+  const maxAmount = form.goal === 'cash_gap' ? 5000000 : AMOUNT_LIMITS.max;
 
   return (
     <div>
@@ -26,12 +27,12 @@ export function CalculatorStep() {
           unit="₽"
           value={form.requestedAmount}
           min={AMOUNT_LIMITS.min}
-          max={AMOUNT_LIMITS.max}
+          max={maxAmount}
           step={AMOUNT_LIMITS.step}
           onChange={(requestedAmount) => dispatch({ type: 'SET_FORM', patch: { requestedAmount } })}
           valueText={`${form.requestedAmount} рублей`}
           minLabel={formatRubShort(AMOUNT_LIMITS.min)}
-          maxLabel={formatRubShort(AMOUNT_LIMITS.max)}
+          maxLabel={formatRubShort(maxAmount)}
         />
         <SliderField
           label="Срок"

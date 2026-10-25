@@ -11,6 +11,12 @@ function mockFetch(status: number, body: unknown, isJson = true) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('HTTP-клиент (режим VITE_USE_MOCK=false)', () => {
+  it('публичный реестр не подменяет неизвестные кредитные данные нулями', async () => {
+    mockFetch(200, { inn: '7712345678', name: 'Компания', annual_revenue: 180000000, business_age_years: 7, segment: 'retail' });
+    const company = await createHttpApi('/api').lookupCompany('7712345678');
+    expect(company.monthly_payments).toBeNull();
+    expect(company.credit_history).toBeNull();
+  });
   it('передаёт сессию в Authorization, не меняя тело заявки', async () => {
     vi.stubGlobal('sessionStorage', { getItem: () => 'test-session' });
     const fetch = mockFetch(200, []);

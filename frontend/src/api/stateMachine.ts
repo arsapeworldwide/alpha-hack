@@ -16,6 +16,8 @@ export const TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
   SIGNED: ['DISBURSED'],
   REJECTED: [],
   DISBURSED: [],
+  MANUAL_REVIEW: ['APPROVED', 'COUNTER_OFFER', 'REJECTED', 'INFO_REQUESTED'],
+  INFO_REQUESTED: ['INFO_REQUESTED', 'CHECKING_EGRUL'],
 };
 
 export function canTransition(from: ApplicationStatus, to: ApplicationStatus): boolean {
@@ -43,6 +45,8 @@ export function stepForStatus(status: ApplicationStatus): 3 | 4 | null {
     case 'OFFER_ACCEPTED':
     case 'SIGNED':
     case 'DISBURSED':
+    case 'MANUAL_REVIEW':
+    case 'INFO_REQUESTED':
       return 4;
     default:
       return null;

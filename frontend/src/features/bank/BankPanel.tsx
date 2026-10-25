@@ -1,77 +1,79 @@
 import { useEffect, useState } from 'react';
-import type { Application } from '../../api/types';
 import { sessionRequest } from '../../api/sessionApi';
 import { formatRub } from '../../lib/format';
 import { FactorList } from '../result/FactorList';
 import { useAuth } from '../auth/context';
 import { DemoControls } from '../demo/DemoControls';
+import { BankQueue } from './BankQueue';
+import { BankDecisionForm, type BankAction } from './BankDecisionForm';
+import type { BankApplication } from './bankTypes';
+import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
+import { STATUS_META } from '../../api/labels';
+import { downloadDocument } from '../documents/documentApi';
 
 export function BankPanel() {
   const { user, logout } = useAuth();
-  const [queue, setQueue] = useState<Application[]>([]);
+  const [queue, setQueue] = useState<BankApplication[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [app, setApp] = useState<Application | null>(null);
-  const [comment, setComment] = useState('');
+  const [app, setApp] = useState<BankApplication | null>(null);
+  const [view, setView] = useState<'needs_decision' | 'all'>('needs_decision');
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-
   useEffect(() => {
     let cancelled = false;
+    let inFlight = false;
     const refresh = async () => {
+      if (inFlight) return;
+      inFlight = true;
       try {
-        const items = await sessionRequest<Application[]>('/bank/applications');
-        const detail = selected ? await sessionRequest<Application>(`/bank/applications/${encodeURIComponent(selected)}`) : null;
+        const items = await sessionRequest<BankApplication[]>(`/bank/applications?view=${view}`);
+        const detail = selected ? await sessionRequest<BankApplication>(`/bank/applications/${encodeURIComponent(selected)}`) : null;
         if (!cancelled) { setQueue(items); setApp(detail); setError(null); }
       } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : 'Очередь недоступна'); }
+      finally { inFlight = false; }
     };
     void refresh();
     const timer = setInterval(() => void refresh(), 2000);
     return () => { cancelled = true; clearInterval(timer); };
-  }, [selected]);
-
-  async function decide(action: 'approve' | 'reject') {
+  }, [selected, view]);
+  async function decide(data: BankAction) {
     if (!app) return;
     setSending(true); setActionError(null);
     try {
-      const result = await sessionRequest<Application>(`/bank/applications/${app.id}/decision`, 'POST', { action, comment });
-      setApp(result);
-      setQueue(await sessionRequest<Application[]>('/bank/applications'));
+      setApp(await sessionRequest<BankApplication>(`/bank/applications/${app.id}/decision`, 'POST', data));
+      setQueue(await sessionRequest<BankApplication[]>(`/bank/applications?view=${view}`));
     } catch (e) { setActionError(e instanceof Error ? e.message : 'Решение не сохранено'); }
     finally { setSending(false); }
   }
-
-  const reviewable = app && ['APPROVED', 'COUNTER_OFFER', 'REJECTED', 'NEEDS_RECHECK'].includes(app.status);
-  const canApprove = reviewable && app.decision?.score != null && app.decision.score >= 45;
+  const scoring = app?.decision ?? app?.system_recommendation;
   return <div className="mx-auto max-w-6xl px-6 py-10">
-    <div className="flex flex-wrap items-center justify-between gap-4"><h1 className="text-3xl font-bold">Рабочее место банка</h1><span>{user.full_name}</span><button onClick={() => void logout()} className="underline">Выйти</button></div>
+    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6"><h1 className="text-3xl font-bold">Рабочее место банка</h1><span className="text-sm text-muted">{user.full_name}</span><Button variant="secondary" onClick={() => void logout()}>Выйти</Button></header>
     <DemoControls />
-    <p className="mt-5 text-muted">Автоматическое решение — рекомендация. Ручное решение сохраняется в журнале. Очередь обновляется каждые 2 секунды.</p>
+    <div role="tablist" aria-label="Раздел очереди" className="mt-8 flex gap-3">
+      <button role="tab" aria-selected={view === 'needs_decision'} className={`rounded-xl px-5 py-3 ${view === 'needs_decision' ? 'bg-ink text-white' : 'bg-surface'}`} onClick={() => setView('needs_decision')}>Требуют решения</button>
+      <button role="tab" aria-selected={view === 'all'} className={`rounded-xl px-5 py-3 ${view === 'all' ? 'bg-ink text-white' : 'bg-surface'}`} onClick={() => setView('all')}>Все заявки</button>
+    </div>
     {error && <p role="alert" className="mt-4 text-accent-dark">{error}</p>}
     {actionError && <p role="alert" className="mt-4 text-accent-dark">{actionError}</p>}
-    <div className="mt-8 grid gap-8 lg:grid-cols-[320px_1fr]">
-      <section aria-label="Очередь заявок" className="space-y-3">
-        {!queue.length && <p>Нет заявок для рассмотрения.</p>}
-        {queue.map(item => <button key={item.id} onClick={() => { setSelected(item.id); setComment(''); setActionError(null); }} className={`block w-full rounded-2xl border p-4 text-left ${selected === item.id ? 'border-ink bg-surface' : 'border-line'}`}>
-          <span className="block font-semibold">{item.company.name}</span><span className="block text-sm">{item.status_label} · {formatRub(item.requested_amount)}</span>
-          <span className="block text-xs text-muted">{item.id}</span>
-        </button>)}
-      </section>
-      <section aria-label="Карточка заявки">
-        {!app && <p>Выберите заявку из очереди.</p>}
+    <div className="mt-6 grid gap-8 lg:grid-cols-[320px_1fr]">
+      <BankQueue items={queue} selected={selected} onSelect={id => { if (!sending) { setSelected(id); setActionError(null); } }} />
+      <section aria-label="Карточка заявки" className="rounded-3xl border border-line p-6 md:p-8">
+        {!app && <p className="text-muted">Выберите заявку из очереди.</p>}
         {app && <>
-          <h2 className="text-2xl font-bold">{app.company.name}</h2>
-          <p className="mt-2">{app.status_label} · {app.goal_label} · {app.term_months} мес.</p>
-          <p className="mt-2">Запрошено {formatRub(app.requested_amount)}. Предложено {app.decision?.approved_amount == null ? '—' : formatRub(app.decision.approved_amount)}.</p>
+          <Badge tone={STATUS_META[app.status].tone}>{app.status_label}</Badge>
+          <h2 className="mt-4 text-2xl font-bold">{app.company.name}</h2>
+          <p className="mt-2 text-muted">{app.goal_label} · {app.term_months} мес.</p>
+          <p className="mt-3 text-lg">Запрошено {formatRub(app.requested_amount)}</p>
+          <p className="mt-2">Система рекомендует {app.system_recommendation?.amount ? formatRub(app.system_recommendation.amount) : 'дождаться проверки или отказать'}.</p>
           {app.error_message && <p className="mt-3 text-accent-dark">{app.error_message}</p>}
-          {app.decision && <div className="mt-8"><FactorList decision={app.decision} /></div>}
-          <label className="mt-6 block">Комментарий клиенту<textarea maxLength={500} value={comment} onChange={e => setComment(e.target.value)} className="mt-2 block w-full rounded-xl border border-line p-3" /></label>
-          <p className="mt-2 text-sm text-muted">Одобрение подтверждает исходную сумму по ставке SPEC. При оценке ниже 45 или до скоринга одобрение недоступно.</p>
-          <div className="mt-4 flex gap-4"><button disabled={!canApprove || sending} onClick={() => void decide('approve')} className="rounded-xl bg-ink px-5 py-3 text-white disabled:opacity-40">Одобрить</button><button disabled={!reviewable || sending} onClick={() => void decide('reject')} className="rounded-xl border border-line px-5 py-3 disabled:opacity-40">Отказать</button></div>
-          {app.decision?.bank_comment && <p className="mt-4">Сохранённый комментарий: {app.decision.bank_comment}</p>}
+          {scoring && <div className="mt-8"><FactorList decision={scoring} /></div>}
+          <BankDecisionForm key={app.id} app={app} sending={sending} onDecision={data => void decide(data)} />
+          {app.decision?.bank_comment && <p className="mt-4 rounded-xl bg-surface p-4">Сохранённый комментарий: {app.decision.bank_comment}</p>}
+          {app.requested_documents?.map(document => <p key={document.kind} className="mt-3 text-sm">{document.kind}: {document.uploaded ? 'загружен' : 'ожидается'} {document.document_id !== null && <button className="underline" onClick={() => void downloadDocument(app.id, document.document_id!, true).catch(e => setActionError(e.message))}>Скачать документ</button>}</p>)}
           <h3 className="mt-8 text-xl font-bold">Журнал событий</h3>
-          <p className="mt-2 text-sm text-muted">Предыдущие условия автоматического решения сохранены в событии каждого ручного пересмотра.</p>
-          <ul className="mt-3 space-y-2 text-sm">{app.events?.map((event, i) => <li key={i}>{new Date(event.occurred_at).toLocaleString('ru-RU')} · {event.actor} · {event.from_status ?? 'Создание'} → {event.to_status}{event.details.comment ? ` · ${String(event.details.comment)}` : ''}{event.details.reviewer ? ` · ${String(event.details.reviewer)}` : ''}</li>)}</ul>
+          <ul className="mt-3 space-y-3 text-sm text-muted">{app.events?.map((event, i) => <li key={i}>{new Date(event.occurred_at).toLocaleString('ru-RU')} · {event.actor} · {event.from_status ?? 'Создание'} → {event.to_status}{event.details.comment ? ` · ${String(event.details.comment)}` : ''}{event.details.reviewer ? ` · ${String(event.details.reviewer)}` : ''}</li>)}</ul>
         </>}
       </section>
     </div>
