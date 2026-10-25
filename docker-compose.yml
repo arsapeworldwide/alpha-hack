@@ -32,6 +32,8 @@ services:
       BANK_API_TOKEN: ${BANK_API_TOKEN:-demo-bank-token}
       PIPELINE_STEP_SECONDS: ${PIPELINE_STEP_SECONDS:-1}
       SIMULATE_BKI_FAILURE: ${SIMULATE_BKI_FAILURE:-false}
+      DEMO_MODE: ${DEMO_MODE:-true}
+      SESSION_HOURS: ${SESSION_HOURS:-8}
       EGRUL_PROVIDER: ${EGRUL_PROVIDER:-simulator}
       BKI_PROVIDER: ${BKI_PROVIDER:-simulator}
       CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:5173","http://localhost:8080"]}'

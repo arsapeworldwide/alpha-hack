@@ -35,5 +35,7 @@ def build_session_factory(engine: Engine) -> sessionmaker[Session]:
 
 
 def initialize_database(engine: Engine) -> None:
+    from app.db import access_models  # noqa: F401
+
     # create_all упрощает демо; изменение существующей схемы потребует миграций.
     Base.metadata.create_all(engine)

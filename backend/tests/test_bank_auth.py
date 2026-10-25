@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 import pytest
-from conftest import application_payload, make_settings
+from conftest import application_payload, login_as, make_settings
 from fastapi.testclient import TestClient
 
 from app.main import create_app
@@ -9,6 +9,7 @@ from app.main import create_app
 
 @pytest.mark.parametrize("headers", [{}, {"X-Bank-Token": "wrong"}])
 def test_bank_routes_require_token(client, headers):
+    client.headers.pop("Authorization", None)
     queue = client.get("/api/bank/applications", headers=headers)
     decision = client.post(
         f"/api/bank/applications/{uuid4()}/decision",
@@ -74,6 +75,7 @@ def test_bank_token_and_comment_are_not_logged(client, monkeypatch):
 def test_bank_cannot_intervene_during_pipeline(tmp_path):
     app = create_app(make_settings(tmp_path, pipeline_step_seconds=60))
     with TestClient(app) as client:
+        login_as(client)
         created = client.post("/api/applications", json=application_payload()).json()
         response = client.post(
             f"/api/bank/applications/{created['id']}/decision",

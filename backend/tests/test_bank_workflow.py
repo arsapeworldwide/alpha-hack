@@ -1,7 +1,6 @@
 from decimal import Decimal
 
-from conftest import application_payload, make_settings, wait_for_status
-from fastapi.testclient import TestClient
+from conftest import application_payload, authenticated_client, make_settings, wait_for_status
 
 from app.db.models import Company
 from app.main import create_app
@@ -114,7 +113,7 @@ def test_bank_confirmation_is_audited_and_accepted_offer_is_locked(client):
 
 def test_recheck_requires_scoring_and_manual_rejection_survives_restart(tmp_path):
     app = create_app(make_settings(tmp_path, simulate_bki_failure=True))
-    with TestClient(app) as client:
+    with authenticated_client(app) as client:
         created = client.post("/api/applications", json=application_payload()).json()
         wait_for_status(client, created["id"], "NEEDS_RECHECK")
         refused = review(client, created["id"], "approve")
@@ -123,6 +122,6 @@ def test_recheck_requires_scoring_and_manual_rejection_survives_restart(tmp_path
         rejected = review(client, created["id"], "reject").json()
         assert rejected["status"] == "REJECTED"
         assert (rejected["decision"]["decided_by"] == "bank") is True
-    with TestClient(create_app(make_settings(tmp_path))) as client:
+    with authenticated_client(create_app(make_settings(tmp_path))) as client:
         saved = client.get(f"/api/applications/{created['id']}").json()
         assert saved == rejected

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.db.access_models import DemoFailure
 from app.db.models import Company
 from app.domain.types import CreditHistory
 
@@ -29,9 +30,11 @@ class BkiSimulator(BkiClient):
         self.simulate_failure = simulate_failure
 
     def check(self, inn: str) -> BkiReport:
-        if self.simulate_failure:
-            raise IntegrationUnavailable("БКИ временно недоступно")
         with self.session_factory() as session:
+            override = session.get(DemoFailure, "bki")
+            unavailable = override.mode == "down" if override else self.simulate_failure
+            if unavailable:
+                raise IntegrationUnavailable("БКИ временно недоступно")
             company = session.get(Company, inn)
             if company is None:
                 raise IntegrationUnavailable("В синтетическом БКИ нет сведений о компании")

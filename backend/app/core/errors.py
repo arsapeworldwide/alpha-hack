@@ -20,6 +20,7 @@ class ErrorResponse(BaseModel):
         "INVALID_SIGN_CODE",
         "TOO_MANY_ATTEMPTS",
         "UNAUTHORIZED",
+        "FORBIDDEN",
         "INTERNAL_ERROR",
     ]
     message: str
@@ -118,5 +119,5 @@ def install_error_handlers(app: FastAPI) -> None:
 
 
 ERROR_RESPONSES = {
-    status: {"model": ErrorResponse} for status in (400, 404, 409, 422, 429, 500, 503)
+    status: {"model": ErrorResponse} for status in (400, 401, 403, 404, 409, 422, 429, 500, 503)
 }

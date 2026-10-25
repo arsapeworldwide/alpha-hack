@@ -14,6 +14,10 @@ def test_bank_rejection_and_client_signature_are_serialized(tmp_path):
                 transport=httpx.ASGITransport(app=app),
                 base_url="http://test",
             ) as client:
+                signed_in = await client.post(
+                    "/api/auth/login", json={"login": "director", "password": "demo-credit-2026"}
+                )
+                client.headers["Authorization"] = "Bearer " + signed_in.json()["access_token"]
                 created = await client.post("/api/applications", json=application_payload())
                 application_id = created.json()["id"]
                 for _ in range(100):

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from conftest import application_payload, wait_for_status
+from conftest import application_payload, authenticated_client, wait_for_status
 from jsonschema import Draft202012Validator
 
 CONTRACT = yaml.safe_load(
@@ -46,12 +46,11 @@ def test_real_responses_validate_against_original_frontend_contract(client, inn,
 
 def test_retry_is_saved_and_recovers_without_restart(tmp_path):
     from conftest import make_settings
-    from fastapi.testclient import TestClient
 
     from app.main import create_app
 
     app = create_app(make_settings(tmp_path, simulate_bki_failure=True))
-    with TestClient(app) as client:
+    with authenticated_client(app) as client:
         created = client.post("/api/applications", json=application_payload()).json()
         wait_for_status(client, created["id"], "NEEDS_RECHECK")
         app.state.pipeline.bki.simulate_failure = False

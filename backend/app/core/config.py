@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     bank_api_token: SecretStr = SecretStr("demo-bank-token")
     pipeline_step_seconds: float = Field(default=1, ge=0, le=60)
     simulate_bki_failure: bool = False
+    demo_mode: bool = True
+    session_hours: int = Field(default=8, ge=1, le=24)
     egrul_provider: Literal["simulator"] = "simulator"
     bki_provider: Literal["simulator"] = "simulator"
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:8080"]

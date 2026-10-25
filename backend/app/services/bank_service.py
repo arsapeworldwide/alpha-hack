@@ -16,6 +16,7 @@ def review_application(
     session: Session,
     application_id: str,
     payload: BankDecisionRequest,
+    reviewer: str = "legacy-bank-token",
 ) -> Application:
     application = get_application(session, application_id)
     target = Status.APPROVED if payload.action == "approve" else Status.REJECTED
@@ -41,6 +42,7 @@ def review_application(
         {
             "action": payload.action,
             "comment": payload.comment,
+            "reviewer": reviewer,
             "previous_decision": previous,
             "offer": {
                 "amount": application.offered_amount,

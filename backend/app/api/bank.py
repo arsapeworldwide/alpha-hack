@@ -10,6 +10,7 @@ from app.db.models import Application
 from app.domain.state_machine import BANK_REVIEW_STATUSES
 from app.schemas.applications import ApplicationResponse
 from app.schemas.bank import BankDecisionRequest
+from app.services.application_service import get_application
 from app.services.application_view import application_view
 from app.services.bank_service import review_application
 
@@ -45,6 +46,12 @@ async def bank_decision(
     payload: BankDecisionRequest,
     session: DbSession,
     pipeline: PipelineDependency,
+    reviewer: Annotated[str, Depends(require_bank_token)],
 ):
     async with pipeline.lock:
-        return application_view(review_application(session, str(id), payload))
+        return application_view(review_application(session, str(id), payload, reviewer))
+
+
+@router.get("/{id}", response_model=ApplicationResponse)
+async def bank_detail(id: str, session: DbSession):
+    return application_view(get_application(session, id))

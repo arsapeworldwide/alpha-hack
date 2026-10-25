@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings
 from app.core.logging import logger
+from app.db.access_models import DemoFailure
 from app.db.models import Application
 from app.domain.state_machine import Status
 from app.integrations.bki import BkiClient
@@ -50,15 +51,14 @@ class Pipeline:
 
     def recover(self) -> None:
         with self.session_factory() as session:
+            override = session.get(DemoFailure, "bki")
+            failure = override.mode == "down" if override else self.settings.simulate_bki_failure
             for application in session.scalars(
                 select(Application).where(
                     Application.status.in_(RECOVERABLE),
                 )
             ):
-                if (
-                    application.status != Status.NEEDS_RECHECK
-                    or not self.settings.simulate_bki_failure
-                ):
+                if application.status != Status.NEEDS_RECHECK or not failure:
                     self.start(application.id)
 
     async def cancel_all(self) -> None:

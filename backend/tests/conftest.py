@@ -1,4 +1,5 @@
 import json
+from contextlib import contextmanager
 from pathlib import Path
 from time import monotonic, sleep
 
@@ -35,7 +36,23 @@ def make_settings(tmp_path: Path, **overrides) -> Settings:
 
 @pytest.fixture
 def client(tmp_path):
-    with TestClient(create_app(make_settings(tmp_path)), raise_server_exceptions=False) as client:
+    with authenticated_client(
+        create_app(make_settings(tmp_path)), raise_server_exceptions=False
+    ) as client:
+        yield client
+
+
+def login_as(client, login="director") -> dict:
+    response = client.post("/api/auth/login", json={"login": login, "password": "demo-credit-2026"})
+    assert response.status_code == 200, response.text
+    client.headers["Authorization"] = f"Bearer {response.json()['access_token']}"
+    return response.json()
+
+
+@contextmanager
+def authenticated_client(app, **kwargs):
+    with TestClient(app, **kwargs) as client:
+        login_as(client)
         yield client
 
 

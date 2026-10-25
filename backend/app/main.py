@@ -6,10 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.staticfiles import StaticFiles
 
-from app.api import applications, bank, companies, demo, feed, health
+from app.api import applications, auth, bank, companies, demo, feed, health
 from app.core.config import Settings, get_settings
 from app.core.errors import ERROR_RESPONSES, install_error_handlers
 from app.core.logging import RequestIdMiddleware, configure_logging
+from app.db.access_seed import seed_access
 from app.db.seed import seed_database
 from app.db.session import build_engine, build_session_factory, initialize_database
 from app.integrations.providers import build_integrations
@@ -29,8 +30,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             factory = build_session_factory(engine)
             with factory() as session:
                 seed_database(session)
+                if config.demo_mode:
+                    seed_access(session)
             app.state.settings = config
             app.state.session_factory = factory
+            app.state.login_attempts = auth.login_attempts()
             egrul, bki = build_integrations(config, factory)
             pipeline = Pipeline(factory, config, egrul, bki)
             app.state.pipeline = pipeline
@@ -59,6 +63,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         feed.router,
         health.router,
         bank.router,
+        auth.router,
     ):
         api.include_router(router)
     app.include_router(api)
@@ -81,7 +86,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_origins=config.cors_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type", "Idempotency-Key", "X-Bank-Token", "X-Request-ID"],
+        allow_headers=[
+            "Content-Type",
+            "Idempotency-Key",
+            "X-Bank-Token",
+            "X-Request-ID",
+            "Authorization",
+        ],
         expose_headers=["X-Request-ID"],
     )
     return app
