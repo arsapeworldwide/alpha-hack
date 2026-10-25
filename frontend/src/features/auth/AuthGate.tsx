@@ -32,7 +32,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     try {
       const result = await sessionRequest<{ access_token: string; user: SessionUser }>('/auth/login', 'POST', { login: name, password: secret });
       saveToken(result.access_token);
-      clearState(window.localStorage);
+      clearState(window.localStorage, result.user.login);
       setUser(result.user);
     } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось войти'); }
     finally { setSending(false); }
@@ -40,7 +40,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   async function logout() {
     try { if (!USE_MOCK) await sessionRequest('/auth/logout', 'POST'); }
-    finally { saveToken(null); clearState(window.localStorage); setUser(USE_MOCK ? mockUser : null); }
+    finally { saveToken(null); clearState(window.localStorage, user?.login); setUser(USE_MOCK ? mockUser : null); }
   }
 
   if (loading) return <p className="p-12" role="status">Проверяем сессию…</p>;

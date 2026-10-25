@@ -3,13 +3,15 @@ import { api } from '../api/client';
 import { StoreContext, type StoreValue } from './context';
 import { clearState, loadState, saveState } from './persist';
 import { reducer } from './reducer';
+import { useAuth } from '../features/auth/context';
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, () => loadState(window.localStorage));
+  const { user } = useAuth();
+  const [state, dispatch] = useReducer(reducer, undefined, () => loadState(window.localStorage, user.login));
 
   useEffect(() => {
-    saveState(window.localStorage, state);
-  }, [state]);
+    saveState(window.localStorage, state, user.login);
+  }, [state, user.login]);
 
   // После перезагрузки на шаге 3–4 подтягиваем свежую версию заявки
   useEffect(() => {
@@ -24,10 +26,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       await api.resetDemo();
     } finally {
-      clearState(window.localStorage);
+      clearState(window.localStorage, user.login);
       dispatch({ type: 'RESET_ALL' });
     }
-  }, []);
+  }, [user.login]);
 
   const value = useMemo<StoreValue>(() => ({ state, dispatch, api, resetDemo }), [state, resetDemo]);
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

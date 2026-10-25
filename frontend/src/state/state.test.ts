@@ -91,6 +91,16 @@ describe('reducer', () => {
 });
 
 describe('сохранение состояния', () => {
+  it('разделяет черновики пользователей одного браузера', () => {
+    const storage = new MemoryStorage();
+    const director = reducer(initialState, { type: 'SELECT_PROFILE', profile: alfa });
+    const services = reducer(initialState, { type: 'SELECT_PROFILE', profile: DEMO_PROFILES[1] });
+    saveState(storage, director, 'director');
+    saveState(storage, services, 'services-owner');
+    expect(loadState(storage, 'director').company?.inn).toBe(alfa.company.inn);
+    expect(loadState(storage, 'services-owner').company?.inn).toBe(DEMO_PROFILES[1].company.inn);
+    expect(loadState(storage, 'accountant')).toEqual(initialState);
+  });
   it('шаг и id заявки переживают перезагрузку', () => {
     const storage = new MemoryStorage();
     let s = reducer(initialState, { type: 'SELECT_PROFILE', profile: alfa });

@@ -8,7 +8,7 @@ export const UI_KEY = 'credit-cabinet:ui:v2';
 
 type Saved = Pick<AppState, 'step' | 'profileId' | 'company' | 'form' | 'applicationId'>;
 
-export function saveState(storage: KeyValueStorage, state: AppState): void {
+export function saveState(storage: KeyValueStorage, state: AppState, login?: string): void {
   const saved: Saved = {
     step: state.step,
     profileId: state.profileId,
@@ -17,7 +17,7 @@ export function saveState(storage: KeyValueStorage, state: AppState): void {
     applicationId: state.applicationId,
   };
   try {
-    storage.setItem(UI_KEY, JSON.stringify(saved));
+    storage.setItem(login ? `${UI_KEY}:${login}` : UI_KEY, JSON.stringify(saved));
   } catch {
     // Хранилище недоступно — просто не сохраняем.
   }
@@ -28,9 +28,9 @@ function isStep(value: unknown): value is Step {
 }
 
 /** Загружает сохранённое состояние. Битые или старые данные — начинаем с чистого листа. */
-export function loadState(storage: KeyValueStorage): AppState {
+export function loadState(storage: KeyValueStorage, login?: string): AppState {
   try {
-    const raw = storage.getItem(UI_KEY);
+    const raw = storage.getItem(login ? `${UI_KEY}:${login}` : UI_KEY);
     if (!raw) return initialState;
     const saved = JSON.parse(raw) as Partial<Saved>;
     if (!isStep(saved.step) || !saved.form) return initialState;
@@ -50,9 +50,9 @@ export function loadState(storage: KeyValueStorage): AppState {
   }
 }
 
-export function clearState(storage: KeyValueStorage): void {
+export function clearState(storage: KeyValueStorage, login?: string): void {
   try {
-    storage.removeItem(UI_KEY);
+    storage.removeItem(login ? `${UI_KEY}:${login}` : UI_KEY);
   } catch {
     // см. saveState()
   }

@@ -72,6 +72,17 @@ async function main() {
     assert.equal((await request(accountant, `/applications/${counterId}`)).status(), 404);
     await accountant.screenshot({ path: path.join(artifacts, 'ACCOUNTANT_VIEW.png'), fullPage: true });
 
+    const otherTab = await director.context().newPage();
+    await otherTab.goto(base);
+    await otherTab.getByRole('button', { name: 'Войти как ИП Иванов', exact: false }).click();
+    await otherTab.getByRole('radio', { name: /ИП Иванов/ }).click();
+    await director.reload();
+    await director.getByRole('heading', { name: 'Кредит одобрен', exact: true }).waitFor({ timeout: 20000 });
+    const own = await (await request(director, '/auth/me')).json();
+    assert.equal(own.login, 'director');
+    assert.equal((await (await request(otherTab, '/auth/me')).json()).login, 'services-owner');
+    await otherTab.close();
+
     await director.getByRole('button', { name: 'Изменить условия', exact: true }).click();
     await director.getByRole('button', { name: 'Назад к компании', exact: true }).click();
     await director.getByRole('button', { name: 'Отключить БКИ', exact: true }).click();
