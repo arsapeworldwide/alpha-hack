@@ -1,5 +1,6 @@
 @baseUrl = http://localhost:8000/api
 @bankToken = demo-bank-token
+@documentId = 1
 
 ### Войти директором перед запросами заявок
 # @name login
@@ -7,6 +8,17 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {"login":"director","password":"demo-credit-2026"}
+
+### Каталог трёх продуктов
+GET {{baseUrl}}/products
+
+### Только требующие решения (интерфейс по умолчанию)
+GET {{baseUrl}}/bank/applications?view=needs_decision
+X-Bank-Token: {{bankToken}}
+
+### Все заявки, включая выданные
+GET {{baseUrl}}/bank/applications?view=all
+X-Bank-Token: {{bankToken}}
 
 @sessionToken = {{login.response.body.$.access_token}}
 
@@ -41,7 +53,7 @@ Authorization: Bearer {{sessionToken}}
 Content-Type: application/json
 Idempotency-Key: collection-approved-1
 
-{"company":{"inn":"7712345678","name":"ООО «Альфа Ритейл»","annual_revenue":180000000,"monthly_payments":400000,"credit_history":"excellent","business_age_years":7,"segment":"retail"},"requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+{"company":{"inn":"7712345678","name":"ООО «Альфа Ритейл»","annual_revenue":180000000,"monthly_payments":400000,"credit_history":"excellent","business_age_years":7,"segment":"retail"},"requested_amount":10000000,"term_months":36,"goal":"working_capital","consent":true}
 
 ### Опрос: дождаться APPROVED, 97 баллов, 19%, 10 000 000
 GET {{baseUrl}}/applications/{{approved.response.body.$.id}}
@@ -72,7 +84,7 @@ Authorization: Bearer {{sessionToken}}
 Content-Type: application/json
 Idempotency-Key: collection-counter-1
 
-{"company":{"inn":"500100732259","name":"ИП Иванов","annual_revenue":24000000,"monthly_payments":400000,"credit_history":"fair","business_age_years":3,"segment":"services"},"requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+{"company":{"inn":"500100732259","name":"ИП Иванов","annual_revenue":24000000,"monthly_payments":400000,"credit_history":"fair","business_age_years":3,"segment":"services"},"requested_amount":10000000,"term_months":36,"goal":"working_capital","consent":true}
 
 ### Опрос: дождаться COUNTER_OFFER, 46 баллов, 24%, 2 500 000
 GET {{baseUrl}}/applications/{{counter.response.body.$.id}}
@@ -107,7 +119,7 @@ Authorization: Bearer {{sessionToken}}
 Content-Type: application/json
 Idempotency-Key: collection-rejected-1
 
-{"company":{"inn":"7723456789","name":"ООО «Вектор»","annual_revenue":9000000,"monthly_payments":300000,"credit_history":"poor","business_age_years":1,"segment":"production"},"requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+{"company":{"inn":"7723456789","name":"ООО «Вектор»","annual_revenue":9000000,"monthly_payments":300000,"credit_history":"poor","business_age_years":1,"segment":"production"},"requested_amount":10000000,"term_months":36,"goal":"working_capital","consent":true}
 
 ### Опрос: REJECTED, 8 баллов, рекомендации и дата повторной подачи
 GET {{baseUrl}}/applications/{{rejected.response.body.$.id}}
@@ -130,7 +142,7 @@ Authorization: Bearer {{sessionToken}}
 Content-Type: application/json
 Idempotency-Key: collection-bank-1
 
-{"company":{"inn":"500100732259","name":"ИП Иванов","annual_revenue":24000000,"monthly_payments":400000,"credit_history":"fair","business_age_years":3,"segment":"services"},"requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+{"company":{"inn":"500100732259","name":"ИП Иванов","annual_revenue":24000000,"monthly_payments":400000,"credit_history":"fair","business_age_years":3,"segment":"services"},"requested_amount":10000000,"term_months":36,"goal":"working_capital","consent":true}
 
 ### Дождаться COUNTER_OFFER
 GET {{baseUrl}}/applications/{{bankReview.response.body.$.id}}
@@ -161,7 +173,7 @@ Authorization: Bearer {{sessionToken}}
 Content-Type: application/json
 Idempotency-Key: collection-bank-reject-1
 
-{"company":{"inn":"7712345678","name":"ООО «Альфа Ритейл»","annual_revenue":180000000,"monthly_payments":400000,"credit_history":"excellent","business_age_years":7,"segment":"retail"},"requested_amount":10000000,"term_months":36,"goal":"working_capital"}
+{"company":{"inn":"7712345678","name":"ООО «Альфа Ритейл»","annual_revenue":180000000,"monthly_payments":400000,"credit_history":"excellent","business_age_years":7,"segment":"retail"},"requested_amount":10000000,"term_months":36,"goal":"working_capital","consent":true}
 
 ### Дождаться APPROVED
 GET {{baseUrl}}/applications/{{bankReject.response.body.$.id}}
@@ -224,3 +236,45 @@ Authorization: Bearer {{bankLogin.response.body.$.access_token}}
 ### Выйти директором; прежний sessionToken станет недействительным
 POST {{baseUrl}}/auth/logout
 Authorization: Bearer {{sessionToken}}
+
+### Своя оферта для Иванова: выполнить до accept-offer/sign
+POST {{baseUrl}}/bank/applications/{{counter.response.body.$.id}}/decision
+X-Bank-Token: {{bankToken}}
+Content-Type: application/json
+
+{"action":"counter","amount":1000000,"term_months":24,"comment":"Меньшая сумма на согласованный срок"}
+
+### Запросить документ у неподписанной заявки
+POST {{baseUrl}}/bank/applications/{{counter.response.body.$.id}}/decision
+X-Bank-Token: {{bankToken}}
+Content-Type: application/json
+
+{"action":"request_info","checklist":["Выписка"],"comment":"Нужен синтетический документ для демо"}
+
+### Загрузить синтетический PDF (положить sample.pdf рядом с этим файлом)
+POST {{baseUrl}}/applications/{{counter.response.body.$.id}}/documents
+Authorization: Bearer {{sessionToken}}
+Content-Type: multipart/form-data; boundary=DemoBoundary
+
+--DemoBoundary
+Content-Disposition: form-data; name="kind"
+
+Выписка
+--DemoBoundary
+Content-Disposition: form-data; name="consent"
+
+true
+--DemoBoundary
+Content-Disposition: form-data; name="file"; filename="sample.pdf"
+Content-Type: application/pdf
+
+< ./sample.pdf
+--DemoBoundary--
+
+### Скачать документ клиентом: documentId взять из application.documents
+GET {{baseUrl}}/applications/{{counter.response.body.$.id}}/documents/{{documentId}}
+Authorization: Bearer {{sessionToken}}
+
+### Скачать тот же документ сотрудником
+GET {{baseUrl}}/bank/applications/{{counter.response.body.$.id}}/documents/{{documentId}}
+X-Bank-Token: {{bankToken}}

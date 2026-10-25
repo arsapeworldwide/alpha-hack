@@ -2,7 +2,7 @@
 
 Актуализация P1: маршруты заявок требуют Bearer-сессию, добавлены auth, банковская
 карточка и demo/failures. Права, учётки и изменения совместимости — [P1_CONTRACT.md](P1_CONTRACT.md).
-Полный текущий экспорт содержит 20 операций. Прежние схемы финансовых ответов сохранены.
+После демо экспорт содержит 24 операции; новые правила — [DEMO_FIXES_CONTRACT.md](DEMO_FIXES_CONTRACT.md). Прежние схемы финансовых ответов сохранены.
 
 Полное описание со схемами — `docs/openapi.yaml` (OpenAPI 3.1, проверен `openapi-spec-validator`). Этот файл — краткая выжимка. Фронтенд реализует контракт дважды: мок (`frontend/src/api/mockApi.ts`) и HTTP-клиент (`frontend/src/api/httpApi.ts`); бэкенд реализует его на FastAPI.
 
@@ -20,7 +20,7 @@
 | `GET /health` | Живость | `{status: "ok"}` |
 | `GET /demo-profiles` | Три демо-компании | `DemoProfile[]` |
 | `GET /companies/lookup?inn=` | Поиск в синтетическом ЕГРЮЛ | `Company` или 404 `COMPANY_NOT_FOUND` |
-| `POST /applications` + `Idempotency-Key` | Отправить заявку (вся карточка компании + сумма, срок, цель) | 201 `Application` в `SUBMITTED`; повтор ключа — 200 та же заявка |
+| `POST /applications` + `Idempotency-Key` | Отправить заявку (реестровая карточка + сумма, срок, цель, consent=true; product_code опционален) | 201 `Application` в `SUBMITTED`; повтор ключа — 200 та же заявка |
 | `GET /applications` | «Мои заявки», новые сверху | `ApplicationSummary[]` |
 | `GET /applications/{id}` | Заявка с этапами, решением и факторами (опрашивается раз в 700 мс) | `Application` |
 | `POST /applications/{id}/accept-offer` | Принять встречное (`COUNTER_OFFER → OFFER_ACCEPTED`) | `Application` |
@@ -29,7 +29,7 @@
 | `GET /feed?segment=&context=` | Лента; `context=rejected` — сначала советы | `FeedResponse` с `reason` и `synthetic: true` |
 | `POST /demo/reset` | Удалить все заявки | `{status, removed_applications}` |
 | `GET /bank/applications` | Очередь для сотрудника (`X-Bank-Token`) | `Application[]` |
-| `POST /bank/applications/{id}/decision` | Ручное решение `{action, comment}` | `Application` |
+| `POST /bank/applications/{id}/decision` | Решение `{action, comment, amount?, term_months?, checklist?}` | `Application` |
 
 ## Объект решения (`Application.decision`)
 
@@ -64,5 +64,6 @@ docs/openapi.yaml экспортируется из FastAPI; пути в экс�
 
 В реальном режиме компания и БКИ перепроверяются по синтетическому реестру:
 3 демо-профиля и 2 дополнительных примера из frontend/src/api/seed.ts.
-Ручной ввод показателей отключён, данные для прогноза и решения берутся из реестра.
+Ручной ввод показателей отключён. До согласия публичные ответы не содержат БКИ;
+после согласия решение использует проверенные данные симуляторов.
 Для неизвестного ИНН lookup и создание дают мягкую ошибку COMPANY_NOT_FOUND (404).

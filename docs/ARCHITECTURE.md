@@ -15,7 +15,11 @@ flowchart LR
     Access --> DB
     API --> Controls[Демо-пульт БКИ: DEMO_MODE + права]
     Controls --> DB
-    Service --> DB[(SQLite /data/credit.db)]
+    Service --> DB[(SQLite / PostgreSQL 16)]
+    Service --> Files[Документы: volume /data/documents]
+    API --> Products[Каталог трёх продуктов]
+    Products --> DB
+    Migrations[Alembic upgrade head] --> DB
     API --> Pipeline[asyncio pipeline: один процесс]
     Pipeline --> Egrul[ЕГРЮЛ: локальный симулятор]
     Pipeline --> Bki[БКИ: локальный симулятор + режим сбоя]
@@ -27,12 +31,12 @@ flowchart LR
     DB --> Events[application_events: system / client / bank]
 ```
 
-Фронтенд перенесён из origin/frontend без правок. Compose запускает оба сервиса;
+Фронтенд объединён с origin/frontend; текущие доработки согласованы пользователем. Compose запускает оба сервиса;
 localhost:8080 обслуживает интерфейс и /api через nginx, localhost:8000 — прямой API.
 deploy/nginx.conf подключает исходный server-конфиг и убирает query string из access-log.
 Для независимой проверки проксирования есть тестовый nginx на localhost:18080
 через docker-compose.integration.yml; он не заменяет исходники фронтенда.
-FastAPI управляет временем жизни БД и задач. На старте создаётся схема,
+FastAPI управляет временем жизни БД и задач. На старте выполняются миграции Alembic,
 дополняется seed и дозапускаются промежуточные заявки и SIGNED.
 
 Каждая asyncio-задача ждёт паузу вне транзакции. Затем открывает короткую

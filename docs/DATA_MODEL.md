@@ -5,6 +5,33 @@ erDiagram
     companies ||--o{ applications : "company_inn"
     applications ||--o{ application_events : "журнал"
     applications ||--o{ factors : "объяснение"
+    applications ||--o| application_workflows : "продукт и согласие"
+    applications ||--o{ application_documents : "документы"
+    products {
+        string code PK
+        string goal
+        bigint min_amount
+        bigint max_amount
+        int min_term
+        int max_term
+        bigint auto_limit
+    }
+    application_workflows {
+        string application_id PK,FK
+        string product_code
+        datetime consent_at
+        json document_checklist
+    }
+    application_documents {
+        int id PK
+        string application_id FK
+        string kind
+        string path
+        string media_type
+        int size
+        string sha256
+        datetime created_at
+    }
     users ||--o{ memberships : "участник"
     companies ||--o{ memberships : "доступ"
     users ||--o{ login_sessions : "сессия"
@@ -114,4 +141,7 @@ manual_decision отделяет ручной результат от автом
 
 Удаление applications каскадно удаляет события и факторы; компании и материалы
 не удаляются. demo/reset отменяет активные задачи до очистки таблиц.
-Для MVP используется create_all. Для смены схемы и PostgreSQL нужны миграции.
+Схему SQLite и PostgreSQL обновляет Alembic. Reset каскадно удаляет workflow,
+документы и файлы, но сохраняет каталог, пользователей, компании и ленту.
+Срок ручной оферты хранится в details.offer банковского события; исходный срок
+applications.term_months остаётся параметром заявки.
