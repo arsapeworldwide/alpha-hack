@@ -1,0 +1,2 @@
+# Backend runtime dependencies; exact versions and hashes live in the backend lock.
+-r backend/requirements.txt
