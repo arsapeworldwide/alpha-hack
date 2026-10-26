@@ -1,69 +1,118 @@
 # Контракт API
 
-Актуализация P1: маршруты заявок требуют Bearer-сессию, добавлены auth, банковская
-карточка и demo/failures. Права, учётки и изменения совместимости — [P1_CONTRACT.md](P1_CONTRACT.md).
-После демо экспорт содержит 24 операции; новые правила — [DEMO_FIXES_CONTRACT.md](DEMO_FIXES_CONTRACT.md). Прежние схемы финансовых ответов сохранены.
+Полные схемы — [OpenAPI 3.1](openapi.yaml), экспортированный из FastAPI.
+[Коллекция запросов](api_collection/backend.http) содержит примеры операций.
+Все пути ниже имеют префикс /api, JSON — UTF-8. Даты — ISO 8601/UTC,
+деньги — целые рубли; ставка в ответе — число процентов годовых.
 
-Полное описание со схемами — `docs/openapi.yaml` (OpenAPI 3.1, проверен `openapi-spec-validator`). Этот файл — краткая выжимка. Фронтенд реализует контракт дважды: мок (`frontend/src/api/mockApi.ts`) и HTTP-клиент (`frontend/src/api/httpApi.ts`); бэкенд реализует его на FastAPI.
+## Доступ и ошибки
 
-## Общие правила
+POST /auth/login возвращает Bearer-токен; запросы заявок требуют
+Authorization: Bearer <token>. Чужая заявка — 404, недостаточные полномочия — 403,
+нет сессии — 401. Права и учётки описаны в [контракте ролей](P1_CONTRACT.md).
+Банк использует сессию underwriter; X-Bank-Token оставлен для совместимости при DEMO_MODE=true.
 
-- Все маршруты под `/api`. JSON, UTF-8.
-- Деньги — целые рубли, ставка — число в % годовых (19, 21.5, 24). Даты — ISO 8601.
-- Ошибки всегда `{code, message, details}`; `message` — понятный текст на русском, без стек-трейсов.
-- Коды: `VALIDATION_ERROR` 422, `NOT_FOUND` 404, `COMPANY_NOT_FOUND` 404, `INVALID_TRANSITION` 409, `INVALID_SIGN_CODE` 400 (`details.attempts_left`), `TOO_MANY_ATTEMPTS` 429, `UNAUTHORIZED` 401.
+Единый ответ ошибки: {code, message, details}, без traceback. Основные коды:
+VALIDATION_ERROR (422), NOT_FOUND/COMPANY_NOT_FOUND (404), INVALID_TRANSITION (409),
+INVALID_SIGN_CODE (400), TOO_MANY_ATTEMPTS (429), UNAUTHORIZED (401).
+Подробные схемы и допустимые ответы каждой операции — в OpenAPI.
 
-## Маршруты
+## Операции
 
-| Метод и путь | Назначение | Ответ |
-|---|---|---|
-| `GET /health` | Живость | `{status: "ok"}` |
-| `GET /demo-profiles` | Три демо-компании | `DemoProfile[]` |
-| `GET /companies/lookup?inn=` | Поиск в синтетическом ЕГРЮЛ | `Company` или 404 `COMPANY_NOT_FOUND` |
-| `POST /applications` + `Idempotency-Key` | Отправить заявку (реестровая карточка + сумма, срок, цель, consent=true; product_code опционален) | 201 `Application` в `SUBMITTED`; повтор ключа — 200 та же заявка |
-| `GET /applications` | «Мои заявки», новые сверху | `ApplicationSummary[]` |
-| `GET /applications/{id}` | Заявка с этапами, решением и факторами (опрашивается раз в 700 мс) | `Application` |
-| `POST /applications/{id}/accept-offer` | Принять встречное (`COUNTER_OFFER → OFFER_ACCEPTED`) | `Application` |
-| `POST /applications/{id}/sign {code}` | Подписать (из `APPROVED`/`OFFER_ACCEPTED`), код 1234, 5 попыток | `Application` в `SIGNED`, затем сервер сам → `DISBURSED` |
-| `POST /applications/{id}/retry` | Повторить проверки из `NEEDS_RECHECK` | `Application` |
-| `GET /feed?segment=&context=` | Лента; `context=rejected` — сначала советы | `FeedResponse` с `reason` и `synthetic: true` |
-| `POST /demo/reset` | Удалить все заявки | `{status, removed_applications}` |
-| `GET /bank/applications` | Очередь для сотрудника (`X-Bank-Token`) | `Application[]` |
-| `POST /bank/applications/{id}/decision` | Решение `{action, comment, amount?, term_months?, checklist?}` | `Application` |
+| Метод и путь | Назначение |
+|---|---|
+| GET /health | API и БД: status=ok, database=ok, synthetic=true |
+| GET /demo-profiles | Три реестровых демо-профиля без кредитных полей |
+| GET /companies/lookup?inn= | Поиск в синтетическом реестре; неизвестный ИНН — 404 |
+| GET /products | WORKING_CAPITAL, INVEST, OVERDRAFT |
+| POST /auth/login | Вход: login/password |
+| GET /auth/me | Текущий пользователь и доступ |
+| POST /auth/logout | Отозвать сессию |
+| POST /applications | Создать заявку; Idempotency-Key, 201/SUBMITTED |
+| GET /applications | История доступных заявок |
+| GET /applications/{id} | Полная заявка, этапы, решение, документы, журнал |
+| POST /applications/{id}/accept-offer | Принять COUNTER_OFFER |
+| POST /applications/{id}/sign | Подписать APPROVED/OFFER_ACCEPTED: {code} |
+| POST /applications/{id}/retry | Повторить БКИ из NEEDS_RECHECK |
+| POST /applications/{id}/documents | Загрузить документ: multipart kind/file/consent |
+| GET /applications/{id}/documents/{document_id} | Скачать с проверкой доступа |
+| GET /feed?segment=&context= | Лента; context=rejected выводит советы первыми |
+| POST /demo/reset | Удалить демо-заявки/документы, сохранить seed |
+| GET /demo/failures | Текущий режим БКИ |
+| POST /demo/failures | Пульт: {bki: ok или down} |
+| GET /bank/applications?view= | Очередь банка |
+| GET /bank/applications/{id} | Карточка банка с рекомендацией системы |
+| POST /bank/applications/{id}/decision | approve/reject/counter/request_info |
+| GET /bank/applications/{id}/documents/{document_id} | Скачать файл сотрудником |
 
-## Объект решения (`Application.decision`)
+## Заявка и согласие
 
-`outcome`, `score`, `factors[]` (`code, name, points, max_points, explanation`), `rate`, `approved_amount`, `term_months`, `monthly_payment`, `total_payment`, `overpayment`, `max_amount`, `capacity`, `debt_ratio`, `rejection_reason`, `recommendations[]`, `reapply_date`, `decided_by`, `bank_comment`. До окончания скоринга `decision = null`.
+Тело POST /applications: company с реестровыми полями, requested_amount, term_months,
+goal и обязательное consent=true. product_code опционален: без него продукт определяется
+по goal. Отсутствие согласия, false и неверный тип — 422. Время согласия и событие
+сохраняются в БД. Компания перепроверяется сервером; поля клиента не подменяют seed.
+До согласия публичные lookup/demo-profiles не возвращают monthly_payments/credit_history.
 
-## Отличия от черновика бэкенда
+| Продукт | goal | Сумма | Срок | Базовая ставка | Лимит автоматического решения |
+|---|---|---|---|---|---|
+| WORKING_CAPITAL | working_capital | 300 тыс.–15 млн ₽ | 3–36 мес. | 19% | 12 млн ₽ |
+| INVEST | equipment | 300 тыс.–15 млн ₽ | 3–36 мес. | 17% | 5 млн ₽ |
+| OVERDRAFT | cash_gap | 300 тыс.–5 млн ₽ | 3–12 мес. | 21% | 5 млн ₽ |
 
-Черновик содержал только список маршрутов. Добавлены схемы, коды ошибок, `retry` для `NEEDS_RECHECK`, параметр `context` у ленты, поля `status_label`, `goal_label`, `pipeline[]`, `sign_attempts_left`, `error_message`.
+Надбавки определяет SPEC. Сумма/срок и соответствие продукта цели проверяются сервером.
+Повтор Idempotency-Key с тем же запросом возвращает 200 и прежнюю заявку;
+другой запрос с тем же ключом — конфликт. Ключ изолирован по пользователю.
+Конвейер сохраняет этапы; клиент опрашивает GET полной заявки.
 
-## Реализация бэкенда после интеграции (25.10.2026)
+## Объект решения (Application.decision)
 
-Исходный документ и OpenAPI ветки frontend сохранены в docs/frontend/ без изменений.
-docs/openapi.yaml экспортируется из FastAPI; пути в экспорте уже содержат /api,
-а в исходном документе этот префикс указан через servers. Итоговые URL одинаковы.
-Ответы реального сервера проверяются jsonschema по исходным схемам фронтенда.
+outcome, score, factors[] (code/name/points/max_points/explanation), rate,
+approved_amount, term_months, monthly_payment, total_payment, overpayment,
+max_amount, capacity, debt_ratio, rejection_reason, recommendations[], reapply_date,
+decided_by, bank_comment. До завершения скоринга и в MANUAL_REVIEW/INFO_REQUESTED
+клиентское decision=null. Ручной отказ до скоринга может иметь score=null и пустые факторы.
 
-Согласованное округление: сначала monthly_payment half-up до целых рублей,
-затем total_payment = monthly_payment * term_months и overpayment = total_payment − approved_amount.
-Деньги во всех расчётах сервера — int/Decimal. В JSON число для ставки, баллов
-и debt_ratio используется только как отображение уже рассчитанных значений.
+Monthly payment округляется half-up до рубля. total_payment = monthly_payment × term_months,
+overpayment = total_payment − approved_amount. Факторы и баллы трёх эталонов — SPEC.
+Все расчёты сервера — int/Decimal; JSON-числа служат отображением результата.
 
-Добавлено поле events для требуемого журналирования; исходный frontend его игнорирует.
-Для ручного отказа до завершения проверок score может быть null, factors пустой:
-это явно означает отсутствие скоринга, а не выдуманную оценку 0.
-Для обычных трёх исходов score всегда integer, как в исходной схеме.
+APPROVED подписывается напрямую, COUNTER_OFFER требует accept-offer (иначе 409).
+Код — 1234: неверный четырёхзначный код расходует попытку, пятая и следующие — 429.
+Неверный формат — 422 без расхода. SIGNED автоматически переходит в DISBURSED.
+[Диаграмма состояний](APPLICATION_STATES.md) описывает остальные переходы.
 
-Согласованное ранее правило банка сохранено: approve при score <45 запрещён.
-Код 409 — INVALID_TRANSITION, диагностическая причина BANK_RATE_UNAVAILABLE
-или BANK_SCORING_REQUIRED находится в details.reason. Остальные внутренние коды
-также приводятся к публичному ErrorCode исходного контракта.
-Пятый неверный код подписания возвращает 429/TOO_MANY_ATTEMPTS и attempts_left=0.
+## Решения сотрудника банка
 
-В реальном режиме компания и БКИ перепроверяются по синтетическому реестру:
-3 демо-профиля и 2 дополнительных примера из frontend/src/api/seed.ts.
-Ручной ввод показателей отключён. До согласия публичные ответы не содержат БКИ;
-после согласия решение использует проверенные данные симуляторов.
-Для неизвестного ИНН lookup и создание дают мягкую ошибку COMPANY_NOT_FOUND (404).
+view=needs_decision: COUNTER_OFFER, NEEDS_RECHECK, MANUAL_REVIEW; это вкладка UI
+по умолчанию. view=all включает завершённые заявки. API без view сохраняет
+совместимый reviewable. Ответ содержит system_recommendation, waiting_minutes,
+capacity_excess и policy_rate; рекомендация рассчитывается по исходным параметрам.
+
+POST решения принимает action и comment (до 500 символов). Counter требует
+amount 300000–15000000 и term_months 3–36; для cash_gap срок не выше 12 месяцев.
+Ставка определяется по SPEC. Превышение capacity требует непустого обоснования (422).
+Для score <45 одобрение/оферта запрещены: 409/INVALID_TRANSITION,
+details.reason=BANK_RATE_UNAVAILABLE. Без скоринга — BANK_SCORING_REQUIRED.
+
+Рассматриваемые статусы: APPROVED/COUNTER_OFFER/REJECTED/NEEDS_RECHECK/MANUAL_REVIEW.
+После OFFER_ACCEPTED/SIGNED/DISBURSED пересмотр запрещён. Reviewer, комментарий,
+прежние и новые условия сохраняются в events. Комментарий видит клиент.
+Исходные параметры заявки не затираются; срок ручной оферты возвращается
+в decision.term_months и хранится в банковском событии details.offer.
+
+## Документы и ручное рассмотрение
+
+Сумма к выдаче выше auto_limit продукта или рейтинг C при сумме выше 5 млн
+переводят автоматический результат в MANUAL_REVIEW. Клиент ждёт специалиста,
+банк видит рекомендацию. Золотые сценарии 97/46/8 не попадают под новые ограничения.
+
+Request_info с непустым checklist переводит неподписанную заявку в INFO_REQUESTED.
+Директор загружает multipart kind/file/consent=true; бухгалтер просматривает/скачивает.
+PDF/PNG/JPEG до 10 МиБ, проверяются MIME и сигнатура; тип/сигнатура/согласие — 422,
+размер выше лимита — 413. Исходное имя файла не используется, метаданные и SHA-256 в БД.
+Загрузка полного списка запускает ЕГРЮЛ → БКИ → скоринг; факторы пересчитываются
+без дублирования, используются исходные условия, не прежняя ручная оферта.
+
+Скачать могут пользователи компании и банк: attachment, no-store, nosniff;
+чужая заявка/файл — 404. Reset удаляет связанные файлы. Данные синтетические:
+OCR и проверка подлинности не реализованы, содержимое выписки не меняет реестр.

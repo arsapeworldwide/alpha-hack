@@ -223,15 +223,15 @@ NEEDS_RECHECK без скоринга нельзя одобрить. После 
 После перезапуска контейнера: `python -m scripts.smoke_bank --verify-report data/bank-report.json`.
 При своём токене задайте BANK_API_TOKEN в окружении скрипта; значение токена не печатается.
 
-См. [план](../docs/BACKEND_PLAN.md), [правила](../docs/SCORING_SPEC.md)
+См. [правила](../docs/SCORING_SPEC.md)
 и [общие эталонные кейсы](../docs/scoring_cases.json).
-Уточнения API: [CONTRACT_CHANGES](../docs/CONTRACT_CHANGES.md),
+Контракт API: [API_CONTRACT](../docs/API_CONTRACT.md),
 ограничения и развитие: [REVIEW_NOTES](../docs/REVIEW_NOTES.md).
 
 
 ## Обновление после демо
 
-[Изменения контракта](../docs/DEMO_FIXES_CONTRACT.md): публичные компании без БКИ,
+[Контракт](../docs/API_CONTRACT.md): публичные компании без БКИ,
 обязательное consent=true, GET /products, counter/request_info в банковском решении,
 INFO_REQUESTED и MANUAL_REVIEW. По умолчанию банковский UI показывает только
 встречные предложения, ручное рассмотрение и повторную проверку.
