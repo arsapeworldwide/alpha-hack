@@ -5,7 +5,7 @@
 рассматривает сложные случаи, запрашивает документы и предлагает свои условия.
 Данные компании берутся из реестра: ручной ввод отключён для защиты показателей скоринга.
 
-**Демо:** [публичный стенд](https://angeles-primarily-qualify-upgrades.trycloudflare.com).
+**Демо:** [публичный стенд](https://grants-desktop-antibody-just.trycloudflare.com).
 Ссылка временная; основной способ запуска — Docker на локальном ПК.
 Логины: `director` — все демо-компании, `accountant` — просмотр Альфа Ритейл,
 `underwriter` — банк. Общий демо-пароль: `demo-credit-2026`.
@@ -67,7 +67,7 @@ docker compose -f docker-compose.yml -f docker-compose.postgres.yml up --build -
 ```
 
 Это отдельная БД; перенос данных SQLite не выполняется автоматически.
-Проверки версии demo-2026-10-25: 227 pytest, 70 Vitest, ruff, ESLint и production build;
+Проверки версии demo-2026-10-26: 227 pytest, 70 Vitest, ruff, ESLint и production build;
 браузерные сценарии и сохранность данных проверены на SQLite/PostgreSQL.
 
 Все данные синтетические. ЕГРЮЛ, БКИ, подписание и выдача — локальные симуляторы;

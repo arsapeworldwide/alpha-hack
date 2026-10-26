@@ -3,6 +3,10 @@
 Полный проект опубликован в main: https://github.com/arsapeworldwide/alpha-hack.
 GitHub хранит исходники; приложение запускается отдельно. GitHub Pages не запускает FastAPI и SQLite.
 
+Адрес демо на 26.10.2026: [открыть сайт](https://grants-desktop-antibody-just.trycloudflare.com).
+Проверка API: [health](https://grants-desktop-antibody-just.trycloudflare.com/api/health).
+После перезапуска туннеля адрес может измениться.
+
 Для временного показа локального запуска используется отдельный контейнер Cloudflare Tunnel.
 Он направляет HTTPS-запросы на frontend:8080; приложение и симуляторы остаются локальными.
 Регистрация, домен и открытие портов роутера не нужны.
